@@ -11,6 +11,8 @@ include_directories(engine
 )
 
 target_link_libraries(engine
+    ${Vulkan_LIBRARIES}
     glfw
     glm
+    spdlog
 )

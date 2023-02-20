@@ -22,7 +22,7 @@ public:
     Context() : m_selectedApi(Api::None) {}
     virtual ~Context() {}
 
-    static Context *createContext(Api api, core::Window& window);
+    static Context *createContext(bool enableValidation, core::Window& window);
 
     const Api m_selectedApi;
 
