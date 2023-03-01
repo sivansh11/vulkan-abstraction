@@ -1,6 +1,7 @@
 #include "context.hpp"
 
 #include "vulkan/vulkan_context.hpp"
+#include "opengl/opengl_context.hpp"
 
 #include <iostream>
 
@@ -12,12 +13,18 @@ Context *Context::createContext(bool enableValidation, core::Window& window) {
     switch (window.getSelectedApi()) {
         case Api::Vulkan:
             return new vulkan::VulkanContext(window, enableValidation);
-            break;
+        
+        case Api::Opengl:
+            return new opengl::OpenglContext(window, enableValidation);
         
         default:
             throw std::runtime_error("Not Implemented!");
-            break;
     }
+}
+
+void Context::destroyContext(Context *ctx) {
+    assert(ctx != nullptr);
+    delete ctx;
 }
 
 } // namespace gfx

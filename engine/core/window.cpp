@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "../gfx/vulkan/vulkan_window.hpp"
-// #include "../gfx/opengl/opengl_window.hpp"
+#include "../gfx/opengl/opengl_window.hpp"
 
 
 namespace core {
@@ -24,9 +24,13 @@ Window::Window(const uint32_t width, const uint32_t height, const std::string& t
 
     switch (m_apiSelected) {
         case gfx::Api::Vulkan:
-            m_internal = new gfx::vulkan::VulkanWindow{m_windowPtr};
+            m_internal = new gfx::vulkan::VulkanWindow{ m_windowPtr };
             break;
         
+        case gfx::Api::Opengl:
+            m_internal = new gfx::opengl::OpenglWindow{ m_windowPtr };
+            break;
+
         default:
             throw std::runtime_error("Not Implemented!");
             break;

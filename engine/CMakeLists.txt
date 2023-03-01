@@ -15,4 +15,5 @@ target_link_libraries(engine
     glfw
     glm
     spdlog
+    glad
 )

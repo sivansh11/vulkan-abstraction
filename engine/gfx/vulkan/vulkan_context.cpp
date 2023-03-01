@@ -55,19 +55,19 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     
     switch (vk::DebugUtilsMessageSeverityFlagBitsEXT{ messageSeverity }) {
         case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
-            ERROR("Validation Layer: {}", pCallbackData->pMessage);
+            ERROR("Vulkan Validation Layer: \n{}", pCallbackData->pMessage);
             break;
         
         case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
-            INFO("Validation Layer: {}", pCallbackData->pMessage);
+            INFO("Vulkan Validation Layer: \n{}", pCallbackData->pMessage);
             break;
         
         case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
-            WARN("Validation Layer: {}", pCallbackData->pMessage);
+            WARN("Vulkan Validation Layer: \n{}", pCallbackData->pMessage);
             break;
         
         case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
-            TRACE("Validation Layer: {}", pCallbackData->pMessage);
+            TRACE("Vulkan Validation Layer: \n{}", pCallbackData->pMessage);
             break;
     }
 
@@ -137,40 +137,6 @@ void VulkanContext::createInstance() {
     INFO("Vulkan: Created Instance!");
 }
 
-vk::SurfaceFormatKHR VulkanContext::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {
-    for (auto& availableFormat : availableFormats) {
-        if (availableFormat.format == vk::Format::eB8G8R8A8Srgb && availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-            return availableFormat;
-        }
-    }
-    if (availableFormats.size() > 0) return availableFormats[0];
-
-    throw std::runtime_error("Vulkan: No Available Surface formats!");
-}
-
-vk::PresentModeKHR VulkanContext::choosePresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
-    for (auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
-            return availablePresentMode;
-        }
-    }
-    return vk::PresentModeKHR::eFifo;
-}
-
-vk::Extent2D VulkanContext::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilites) {
-    if (capabilites.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-        return capabilites.currentExtent;
-    } else {
-        auto [width, height] = reinterpret_cast<const VulkanWindow *>(m_window.getInternal())->getExtent();
-
-        VkExtent2D actualExtent{ width, height };
-        actualExtent.width = std::clamp(actualExtent.width, capabilites.minImageExtent.width, capabilites.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height, capabilites.minImageExtent.height, capabilites.maxImageExtent.height);
-        
-        return actualExtent;
-    }
-}   
-
 void VulkanContext::createSurface() {
     VkSurfaceKHR tempSurface{};
     if (reinterpret_cast<const VulkanWindow *>(m_window.getInternal())->createSurface(m_instance, nullptr, &tempSurface) != VK_SUCCESS) {
@@ -192,7 +158,7 @@ void VulkanContext::setupDebugMessenger() {
     INFO("Vulkan: Setup Debug Messenger!");
 }
 
-VulkanContext::QueueFamilyIndices VulkanContext::findQueueFamilies(const vk::PhysicalDevice& physicalDevice) {
+VulkanContext::QueueFamilyIndices VulkanContext::findQueueFamilies(const vk::PhysicalDevice& physicalDevice) const {
     QueueFamilyIndices indices;
 
     auto queueFamilies = physicalDevice.getQueueFamilyProperties();
@@ -214,10 +180,7 @@ VulkanContext::QueueFamilyIndices VulkanContext::findQueueFamilies(const vk::Phy
     return indices;
 }
 
-VulkanContext::SwapChainSupportDetails VulkanContext::querySwapChainSupport(const vk::PhysicalDevice& physicalDevice) {
-    INFO("");
-    INFO("");
-    INFO("Current Device: {}", physicalDevice.getProperties().deviceName);
+VulkanContext::SwapChainSupportDetails VulkanContext::querySwapChainSupport(const vk::PhysicalDevice& physicalDevice) const {
     SwapChainSupportDetails details;
 
     details.formats = physicalDevice.getSurfaceFormatsKHR(m_surface);

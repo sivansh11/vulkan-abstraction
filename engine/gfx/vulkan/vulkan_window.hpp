@@ -6,7 +6,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#define GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include <vector>
@@ -18,7 +18,6 @@ namespace vulkan {
 
 class VulkanWindow {
 public:
-
     VulkanWindow(GLFWwindow *window) : m_windowPtr(window) {}
 
     static constexpr Api api = Api::Vulkan;

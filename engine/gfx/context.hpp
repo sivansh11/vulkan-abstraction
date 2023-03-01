@@ -5,6 +5,8 @@
 
 #include "../core/window.hpp"
 
+#include <memory>
+
 #ifndef NDEBUG
 #define CAST(TYPE, VALUE) \
     reinterpret_cast<TYPE *>(VALUE); \
@@ -23,6 +25,7 @@ public:
     virtual ~Context() {}
 
     static Context *createContext(bool enableValidation, core::Window& window);
+    static void destroyContext(Context *ctx);
 
     const Api m_selectedApi;
 

@@ -1,0 +1,1 @@
+rewrite window and api specific windows, instead of using pimpl, use user facing windows, and internal api specific casted windows
