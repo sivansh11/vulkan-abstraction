@@ -7,3 +7,15 @@
 [submodule "deps/spdlog"]
 	path = deps/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "deps/glslang"]
+	path = deps/glslang
+	url = https://github.com/KhronosGroup/glslang.git
+[submodule "deps/shaderc"]
+	path = deps/shaderc
+	url = https://github.com/google/shaderc.git
+[submodule "deps/SPIRV-Headers"]
+	path = deps/SPIRV-Headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git
+[submodule "deps/SPIRV-Tools"]
+	path = deps/SPIRV-Tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools.git
