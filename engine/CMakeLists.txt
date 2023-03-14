@@ -15,5 +15,10 @@ target_link_libraries(engine
     glfw
     glm
     spdlog
-    glad
+    glslang
+    shaderc
+    SPIRV-Headers
+    SPIRV-Tools
 )
+
+target_include_directories(engine PUBLIC ../deps/shaderc/libshaderc_util/include)

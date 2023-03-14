@@ -5,8 +5,19 @@
 
 namespace core {
 
-struct Extent2D {
-    uint32_t width, height;
+struct Dimensions {
+    union  {
+        struct {
+            uint32_t x, y, z;
+        };
+        struct {
+            uint32_t width, height, depth;
+        };
+        struct {
+            uint32_t data[3];
+        };
+    };
+    
 };
 
 } // namespace core

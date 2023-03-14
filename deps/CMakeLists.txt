@@ -26,4 +26,13 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 add_subdirectory(glm)
 add_subdirectory(spdlog)
-add_subdirectory(glad)
+
+set(BUILD_SHARED_LIBS ON)
+add_subdirectory(glslang)
+
+add_subdirectory(SPIRV-Headers)
+add_subdirectory(SPIRV-Tools)
+
+set(SHADERC_SKIP_TESTS ON)
+set(SHADERC_ENABLE_TESTS OFF)
+add_subdirectory(shaderc)
