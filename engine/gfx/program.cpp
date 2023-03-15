@@ -281,17 +281,17 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
         shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, kind, name, options);
 
         if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
-            throw std::runtime_error("Failed to compile shader: " + shaderPath.string());
+            throw std::runtime_error("Failed to compile shader: " + shaderPath.string() + "\n\t" + module.GetErrorMessage());
         }
 
         INFO("Successfully compiled shader {}", shaderPath.filename().string());
 
         std::vector<uint32_t> code{ module.cbegin(), module.cend() };
 
-        std::string codeToBeSaved { reinterpret_cast<const char*>(code.data()), code.size() * sizeof(uint32_t) };
-        std::fstream file{"../../../assets/shader/" + shaderPath.filename().string() + ".spv", std::fstream::out | std::fstream::trunc | std::fstream::binary };
-        file.write(codeToBeSaved.c_str(), codeToBeSaved.size());
-        file.close();
+        // std::string codeToBeSaved { reinterpret_cast<const char*>(code.data()), code.size() * sizeof(uint32_t) };
+        // std::fstream file{"../../../assets/shader/" + shaderPath.filename().string() + ".spv", std::fstream::out | std::fstream::trunc | std::fstream::binary };
+        // file.write(codeToBeSaved.c_str(), codeToBeSaved.size());
+        // file.close();
 
         vk::ShaderModuleCreateInfo shaderModuleCreateInfo = vk::ShaderModuleCreateInfo{}
             .setCodeSize(code.size() * sizeof(uint32_t))

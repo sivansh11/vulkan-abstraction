@@ -362,6 +362,7 @@ void Context::present(const PresentInfo& presentInfo) {
         .setPWaitSemaphores(presentInfo.m_waitSemaphores.data())
         .setSwapchainCount(1)
         .setPSwapchains(swapChains)
+        .setPResults(nullptr)
         .setPImageIndices(&presentInfo.m_imageIndex);
 
     m_presentQueue.presentKHR(&vkPresentInfo);

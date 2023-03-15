@@ -112,6 +112,10 @@ void SwapChain::createImageViews() {
                 .setB(vk::ComponentSwizzle::eIdentity)
                 .setA(vk::ComponentSwizzle::eIdentity))
             .setSubresourceRangeAspectMask(vk::ImageAspectFlagBits::eColor)
+            .setSubresourceRangeBaseMipLevel(0)
+            .setSubresourceRangeLevelCount(1)
+            .setSubresourceRangeBaseArrayLayer(0)
+            .setSubresourceRangeLayerCount(1)
             .build(m_ctx));
     }
 }
@@ -155,10 +159,12 @@ void SwapChain::createSyncObjects() {
 
 uint32_t SwapChain::acquireNextImage(uint64_t timeout) {
     m_inFlightFence.wait(timeout);
-    // m_inFlightFence.reset();
+    m_inFlightFence.reset();
     uint32_t imageIndex;
-    auto a = m_ctx->getDevice().acquireNextImageKHR(m_swapChain, timeout, m_imageAvailableSemaphore.getSemaphore(), VK_NULL_HANDLE, &imageIndex);
-
+    auto res = m_ctx->getDevice().acquireNextImageKHR(m_swapChain, timeout, m_imageAvailableSemaphore.getSemaphore(), VK_NULL_HANDLE, &imageIndex);
+    if (res != vk::Result::eSuccess) {
+        throw std::runtime_error("Failed to acquire next image!");
+    }
     return imageIndex;
 }
 
