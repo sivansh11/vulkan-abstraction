@@ -17,7 +17,7 @@ static std::string readFile(const std::filesystem::path& path) {
     if (!file.is_open()) {
         throw std::runtime_error("Failed to read file: " + path.string());
     }
-    INFO("Read file {}", path.c_str());
+    INFO("Read file {}", path.string());
 
     return std::string((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
 }
@@ -254,7 +254,7 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
     for (auto& shaderPath : m_shaderPaths) {
 
         const auto source = utils::readFile(shaderPath);
-        const auto name = shaderPath.filename().c_str();
+        const auto name = shaderPath.filename().string().c_str();
 
         // TODO: potentially add options for setting optimization levels
         options.SetOptimizationLevel(shaderc_optimization_level_zero);
@@ -284,7 +284,7 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
             throw std::runtime_error("Failed to compile shader: " + shaderPath.string());
         }
 
-        INFO("Successfully compiled shader {}", shaderPath.filename().c_str());
+        INFO("Successfully compiled shader {}", shaderPath.filename().string());
 
         std::vector<uint32_t> code{ module.cbegin(), module.cend() };
 

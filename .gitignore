@@ -1,3 +1,4 @@
 .vscode/
 build/
 clean.sh
+CMakeFiles/
