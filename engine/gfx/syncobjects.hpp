@@ -1,14 +1,14 @@
 #ifndef GFX_SYNCOBJECTS_HPP
 #define GFX_SYNCOBJECTS_HPP
 
-#include "context.hpp"
+#include "device.hpp"
 
 namespace gfx {
 
 class Semaphore {
 public:
     struct Builder {
-        Semaphore build(const Context *ctx);
+        Semaphore build(std::shared_ptr<Device> device);
 
         vk::SemaphoreCreateInfo m_semaphoreCreateInfo;
     };
@@ -23,9 +23,9 @@ public:
      * when A is done, it will signal semaphore S
      * B will wait for S to be signaled
      * 
-     * @param ctx 
+     * @param device 
      */
-    Semaphore() : m_ctx(nullptr), m_semaphore(VK_NULL_HANDLE) {}
+    Semaphore() : m_device(nullptr), m_semaphore(VK_NULL_HANDLE) {}
 
     ~Semaphore();
 
@@ -37,10 +37,10 @@ public:
     vk::Semaphore getSemaphore() const { return m_semaphore; }
 
 private:
-    Semaphore(const Context *ctx, vk::Semaphore semaphore);
+    Semaphore(std::shared_ptr<Device> device, vk::Semaphore semaphore);
 
 private:
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     vk::Semaphore m_semaphore;
 };
 
@@ -50,7 +50,7 @@ public:
         Builder();
 
         Builder& setFlags(vk::FenceCreateFlags flags);
-        Fence build(const Context *ctx);
+        Fence build(std::shared_ptr<Device> device);
 
         vk::FenceCreateInfo m_fenceCreateInfo;
     };
@@ -63,10 +63,10 @@ public:
      * vkQueueSubmit(work: A, fence: F)
      * vkWaitForFence(F)
      * 
-     * @param ctx 
+     * @param device 
      */
     
-    Fence() : m_ctx(nullptr), m_fence(VK_NULL_HANDLE) {}
+    Fence() : m_device(nullptr), m_fence(VK_NULL_HANDLE) {}
 
     ~Fence();
     
@@ -81,10 +81,10 @@ public:
     vk::Fence getFence() const { return m_fence; }
 
 private:
-    Fence(const Context *ctx, vk::Fence fence);
+    Fence(std::shared_ptr<Device> device, vk::Fence fence);
 
 private:
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     vk::Fence m_fence;
 };
 

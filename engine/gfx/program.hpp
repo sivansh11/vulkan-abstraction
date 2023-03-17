@@ -1,7 +1,7 @@
 #ifndef GFX_PROGRAM_HPP
 #define GFX_PROGRAM_HPP
 
-#include "context.hpp"
+#include "device.hpp"
 #include "renderpass.hpp"
 #include "commandbuffer.hpp"
 
@@ -44,7 +44,7 @@ public:
         Builder& setMultisamplingSampleShadingEnable(bool enable);
         Builder& setMultisamplinRasterizationSamples(vk::SampleCountFlagBits sampleCount);
         Builder& setMultisamplinMinSampleShading(float factor);
-        Builder& setMultisamplingSampleMask(vk::SampleMask sampleMask);
+        // Builder& setMultisamplingSampleMask(vk::SampleMask sampleMask);
         Builder& setMultisamplingAlphaToCoverageEnable(bool enable);
         Builder& setMultisamplingAlphaToOneEnable(bool enable);
 
@@ -64,14 +64,15 @@ public:
         Builder& addLayoutDescriptorSet(const vk::DescriptorSetLayout& descriptorSetLayout);
 
         // TODO: add setVertexInput 
-        // Builder& setVertexInput();
+        Builder& addVertexInputBindingDescription(const vk::VertexInputBindingDescription& vertexInputBindingDescription);
+        Builder& addVertexInputAttributeDescription(const vk::VertexInputAttributeDescription& vertexInputAttributeDescription);
 
         // renderpass
         Builder& setRenderPass(const RenderPass& renderPass);
 
 
-        GraphicsProgram build(const Context *ctx);
-        // GraphicsProgram buildComputeProgram(const Context *ctx);
+        GraphicsProgram build(std::shared_ptr<Device> device);
+        // GraphicsProgram buildComputeProgram(const Context *device);
 
         // TODO: add depth stencil state
 
@@ -89,11 +90,13 @@ public:
         std::vector<vk::DescriptorSetLayout> m_descriptorSetLayout;
         std::vector<vk::SubpassDescription> m_subpassDescriptions;
         std::vector<vk::AttachmentDescription> m_attachmentDescriptions;
+        std::vector<vk::VertexInputBindingDescription> m_vertexInputBindingDescriptions;
+        std::vector<vk::VertexInputAttributeDescription> m_vertexInputAttributeDescriptions;
 
         vk::RenderPass m_renderPass;
     };
 
-    GraphicsProgram() : m_ctx(nullptr), m_pipeline(VK_NULL_HANDLE), m_pipelineLayout(VK_NULL_HANDLE), m_shaderModules{} {}
+    GraphicsProgram() : m_device(nullptr), m_pipeline(VK_NULL_HANDLE), m_pipelineLayout(VK_NULL_HANDLE), m_shaderModules{} {}
 
     ~GraphicsProgram();
 
@@ -103,10 +106,10 @@ public:
     void bind(const CommandBuffer& commandBuffer);
 
 private:
-    GraphicsProgram(const Context *ctx, const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, const std::vector<vk::ShaderModule>& shaderModules);
+    GraphicsProgram(std::shared_ptr<Device> device, const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, const std::vector<vk::ShaderModule>& shaderModules);
 
 private:
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     vk::Pipeline m_pipeline;
     vk::PipelineLayout m_pipelineLayout;
     std::vector<vk::ShaderModule> m_shaderModules;

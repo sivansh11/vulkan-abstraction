@@ -2,6 +2,7 @@
 #define GFX_CONTEXT_HPP
 
 #include "../core/window.hpp"
+#include "../core/log.hpp"
 
 #include <vector>
 #include <optional>
@@ -13,7 +14,7 @@ class CommandBuffer;
 class Fence;
 class SwapChain;
 
-class Context {
+class Device {
 public:
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
@@ -31,20 +32,20 @@ public:
     };
 
 
-    Context(core::Window& window, bool enableValidation);
-    ~Context();
+    Device(core::Window& window, bool enableValidation);
+    ~Device();
 
-    Context(const Context&) = delete;
-    Context& operator=(const Context&) = delete;
-    Context(const Context&&) = delete;
-    Context& operator=(const Context&&) = delete;
+    Device(const Device&) = delete;
+    Device& operator=(const Device&) = delete;
+    Device(const Device&&) = delete;
+    Device& operator=(const Device&&) = delete;
     
     const core::Window& getWindow() const { return m_window; }
     SwapChainSupportDetails getSwapChainSupportDetails() const { return querySwapChainSupport(m_physicalDevice); }
     QueueFamilyIndices getQueueFamilyIndices() const { return findQueueFamilies(m_physicalDevice); }
     const vk::SurfaceKHR& getSurface() const { return m_surface; }
     const vk::Device& getDevice() const { return m_device; }
-    uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlagBits memoryPropertyFlags) const;
+    uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags memoryPropertyFlags) const;
 
 
     // might change in future, might relocate!
@@ -77,7 +78,7 @@ public:
         uint32_t m_imageIndex;
         vk::SwapchainKHR m_swapChain;
     };
-    void present(const PresentInfo& presentInfo);
+    vk::Result present(const PresentInfo& presentInfo);
 
 private:
     void createInstance();
@@ -113,8 +114,6 @@ private:
     vk::Device                             m_device;
     vk::Queue                              m_graphicsQueue;
     vk::Queue                              m_presentQueue;
-
-
 };
 
 } // namespace gfx

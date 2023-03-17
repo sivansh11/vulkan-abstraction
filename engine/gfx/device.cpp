@@ -1,4 +1,4 @@
-#include "context.hpp"
+#include "device.hpp"
 
 #include "../core/log.hpp"
 
@@ -15,7 +15,7 @@
 
 namespace gfx {
 
-Context::Context(core::Window& window, bool enableValidation) : m_window(window), m_validations(enableValidation) {
+Device::Device(core::Window& window, bool enableValidation) : m_window(window), m_validations(enableValidation) {
     createInstance();
     setupDebugMessenger();
     createSurface();
@@ -23,7 +23,7 @@ Context::Context(core::Window& window, bool enableValidation) : m_window(window)
     createLogicalDevice();
 }
 
-Context::~Context() {
+Device::~Device() {
     m_device.destroy();
     m_instance.destroySurfaceKHR(m_surface);
     if (m_validations) {
@@ -32,7 +32,7 @@ Context::~Context() {
     m_instance.destroy();
 }
 
-bool Context::checkRequiredLayersSupport(const std::vector<const char *>& m_requiredLayers) noexcept {
+bool Device::checkRequiredLayersSupport(const std::vector<const char *>& m_requiredLayers) noexcept {
     auto  availableLayers = vk::enumerateInstanceLayerProperties();
     for (auto layerName : m_requiredLayers) {
         bool layerFound = false;
@@ -77,7 +77,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
 }
 
-void Context::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& debugUtilsMessengerCreateInfo) {
+void Device::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& debugUtilsMessengerCreateInfo) {
     debugUtilsMessengerCreateInfo.setMessageSeverity(
         vk::DebugUtilsMessageSeverityFlagBitsEXT::eError   |
         vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning 
@@ -94,7 +94,7 @@ void Context::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfo
     debugUtilsMessengerCreateInfo.setPNext(nullptr);
 }
 
-void Context::createInstance() {
+void Device::createInstance() {
     auto windowExtensions = m_window.getRequiredExtensions();
 
     m_requiredExtensions.insert(m_requiredExtensions.end(), windowExtensions.begin(), windowExtensions.end());
@@ -139,7 +139,7 @@ void Context::createInstance() {
     INFO("Vulkan: Created Instance!");
 }
 
-void Context::createSurface() {
+void Device::createSurface() {
     VkSurfaceKHR tempSurface{};
     if (m_window.createSurface(m_instance, nullptr, &tempSurface) != VK_SUCCESS) {
         throw std::runtime_error("Vulkan: Failed to get window surface!");
@@ -149,7 +149,7 @@ void Context::createSurface() {
     INFO("Vulkan: Created Surface!");
 }
 
-void Context::setupDebugMessenger() {
+void Device::setupDebugMessenger() {
     if (!m_validations) return;
     vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo{};
     populateDebugMessengerCreateInfo(debugUtilsMessengerCreateInfo);
@@ -160,7 +160,7 @@ void Context::setupDebugMessenger() {
     INFO("Vulkan: Setup Debug Messenger!");
 }
 
-Context::QueueFamilyIndices Context::findQueueFamilies(const vk::PhysicalDevice& physicalDevice) const {
+Device::QueueFamilyIndices Device::findQueueFamilies(const vk::PhysicalDevice& physicalDevice) const {
     QueueFamilyIndices indices;
 
     auto queueFamilies = physicalDevice.getQueueFamilyProperties();
@@ -182,7 +182,7 @@ Context::QueueFamilyIndices Context::findQueueFamilies(const vk::PhysicalDevice&
     return indices;
 }
 
-Context::SwapChainSupportDetails Context::querySwapChainSupport(const vk::PhysicalDevice& physicalDevice) const {
+Device::SwapChainSupportDetails Device::querySwapChainSupport(const vk::PhysicalDevice& physicalDevice) const {
     SwapChainSupportDetails details;
 
     details.formats = physicalDevice.getSurfaceFormatsKHR(m_surface);
@@ -194,7 +194,7 @@ Context::SwapChainSupportDetails Context::querySwapChainSupport(const vk::Physic
     return details;
 }
 
-bool Context::checkRequiredExtensionSupport(const vk::PhysicalDevice& physicalDevice) noexcept {
+bool Device::checkRequiredExtensionSupport(const vk::PhysicalDevice& physicalDevice) noexcept {
     auto availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
     std::set<std::string> requiredExtensions(m_requiredDeviceExtensions.begin(), m_requiredDeviceExtensions.end());
 
@@ -205,7 +205,7 @@ bool Context::checkRequiredExtensionSupport(const vk::PhysicalDevice& physicalDe
     return requiredExtensions.empty();
 }
 
-bool Context::isDeviceSuitable(const vk::PhysicalDevice& physicalDevice) {
+bool Device::isDeviceSuitable(const vk::PhysicalDevice& physicalDevice) {
     auto deviceProperties = physicalDevice.getProperties();
     auto deviceFeatures = physicalDevice.getFeatures();
 
@@ -221,7 +221,7 @@ bool Context::isDeviceSuitable(const vk::PhysicalDevice& physicalDevice) {
     return deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu && indices.isComplete() && swapChainAdequate;
 }
 
-void Context::pickPhysicalDevice() {
+void Device::pickPhysicalDevice() {
     m_requiredDeviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
     auto physicalDevices = m_instance.enumeratePhysicalDevices();
@@ -250,7 +250,7 @@ void Context::pickPhysicalDevice() {
     INFO("Picked Physical device {} of type {}", pickedPhysicalDeviceProperties.deviceName, vk::to_string(pickedPhysicalDeviceProperties.deviceType));
 }
 
-void Context::createLogicalDevice() {
+void Device::createLogicalDevice() {
     auto queueFamilyIndices = findQueueFamilies(m_physicalDevice);
 
     std::vector<vk::DeviceQueueCreateInfo> deviceQueueCreateInfos;
@@ -284,9 +284,11 @@ void Context::createLogicalDevice() {
 
     m_graphicsQueue = m_device.getQueue(queueFamilyIndices.graphicsFamily.value(), 0);
     m_presentQueue = m_device.getQueue(queueFamilyIndices.presentFamily.value(), 0);
+
+    INFO("Created Logical Device!");
 }
 
-uint32_t Context::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlagBits memoryPropertyFlags) const {
+uint32_t Device::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags memoryPropertyFlags) const {
     auto physicalDeviceMemoryProperties = m_physicalDevice.getMemoryProperties();
     for (uint32_t i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; i++) {
         if (typeFilter & (1 << i) && (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags) {
@@ -296,34 +298,34 @@ uint32_t Context::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlagBits
     throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-Context::QueueSubmitInfo::QueueSubmitInfo() {}
+Device::QueueSubmitInfo::QueueSubmitInfo() {}
 
-Context::QueueSubmitInfo& Context::QueueSubmitInfo::addWaitSemaphore(const Semaphore& semaphore) {
+Device::QueueSubmitInfo& Device::QueueSubmitInfo::addWaitSemaphore(const Semaphore& semaphore) {
     m_waitSemaphores.push_back(semaphore.getSemaphore());
     return *this;
 }
 
-Context::QueueSubmitInfo& Context::QueueSubmitInfo::addSignalSemaphore(const Semaphore& semaphore) {
+Device::QueueSubmitInfo& Device::QueueSubmitInfo::addSignalSemaphore(const Semaphore& semaphore) {
     m_signalSemaphores.push_back(semaphore.getSemaphore());
     return *this;
 }
 
-Context::QueueSubmitInfo& Context::QueueSubmitInfo::addCommandBuffer(const CommandBuffer& commandBuffer) {
+Device::QueueSubmitInfo& Device::QueueSubmitInfo::addCommandBuffer(const CommandBuffer& commandBuffer) {
     m_commandBuffers.push_back(commandBuffer.getCommandBuffer());
     return *this;
 }
 
-Context::QueueSubmitInfo& Context::QueueSubmitInfo::addWaitStage(vk::PipelineStageFlags flags) {
+Device::QueueSubmitInfo& Device::QueueSubmitInfo::addWaitStage(vk::PipelineStageFlags flags) {
     m_waitStages |= flags;
     return *this;
 }
 
-Context::QueueSubmitInfo& Context::QueueSubmitInfo::setFence(const Fence& fence) {
+Device::QueueSubmitInfo& Device::QueueSubmitInfo::setFence(const Fence& fence) {
     m_fence = fence.getFence();
     return *this;
 }
 
-void Context::submit(const QueueSubmitInfo& queueSubmitInfo) {
+void Device::submit(const QueueSubmitInfo& queueSubmitInfo) {
     vk::SubmitInfo submitInfo = vk::SubmitInfo{}
         .setCommandBufferCount(queueSubmitInfo.m_commandBuffers.size())
         .setPCommandBuffers(queueSubmitInfo.m_commandBuffers.data())
@@ -338,24 +340,24 @@ void Context::submit(const QueueSubmitInfo& queueSubmitInfo) {
     }
 }
 
-Context::PresentInfo::PresentInfo() {}
+Device::PresentInfo::PresentInfo() {}
 
-Context::PresentInfo& Context::PresentInfo::setImageIndex(uint32_t imageIndex) {
+Device::PresentInfo& Device::PresentInfo::setImageIndex(uint32_t imageIndex) {
     m_imageIndex = imageIndex;
     return *this;
 }
 
-Context::PresentInfo& Context::PresentInfo::addWaitSemaphore(const Semaphore& semaphore) {
+Device::PresentInfo& Device::PresentInfo::addWaitSemaphore(const Semaphore& semaphore) {
     m_waitSemaphores.push_back(semaphore.getSemaphore());
     return *this;
 } 
 
-Context::PresentInfo& Context::PresentInfo::setSwapChain(const SwapChain& swapChain) {
+Device::PresentInfo& Device::PresentInfo::setSwapChain(const SwapChain& swapChain) {
     m_swapChain = swapChain.getSwapChain();
     return *this;
 }
 
-void Context::present(const PresentInfo& presentInfo) {
+vk::Result Device::present(const PresentInfo& presentInfo) {
     vk::SwapchainKHR swapChains[] = { presentInfo.m_swapChain };
     vk::PresentInfoKHR vkPresentInfo = vk::PresentInfoKHR{}
         .setWaitSemaphoreCount(presentInfo.m_waitSemaphores.size())
@@ -365,7 +367,7 @@ void Context::present(const PresentInfo& presentInfo) {
         .setPResults(nullptr)
         .setPImageIndices(&presentInfo.m_imageIndex);
 
-    m_presentQueue.presentKHR(&vkPresentInfo);
+    return m_presentQueue.presentKHR(&vkPresentInfo);
 }
 
 } // namespace gfx

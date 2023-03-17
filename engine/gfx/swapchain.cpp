@@ -4,12 +4,18 @@
 
 namespace gfx {
 
-SwapChain::SwapChain(const Context *ctx, const vk::Extent2D& windowExtent) : m_ctx(ctx), m_deviceRef(m_ctx->getDevice()) {
+SwapChain::SwapChain(std::shared_ptr<Device> device, uint32_t maxFramesInFlight) : m_device(device), m_deviceRef(m_device->getDevice()), MAX_FRAMES_IN_FLIGHT(maxFramesInFlight) {
     init();
 }
 
 SwapChain::~SwapChain() {
+    cleanup();
+}
+
+void SwapChain::cleanup() {
     m_deviceRef.destroySwapchainKHR(m_swapChain);
+    m_swapChainFrameBuffer.clear();
+    m_swapChainImageViews.clear();
 }
 
 vk::SurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {
@@ -36,13 +42,21 @@ vk::Extent2D SwapChain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capab
     if (capabilites.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilites.currentExtent;
     } else {
-        vk::Extent2D actualExtent = m_ctx->getWindow().getDimensions();
+        vk::Extent2D actualExtent = m_device->getWindow().getDimensions();
         actualExtent.width = std::clamp(actualExtent.width, capabilites.minImageExtent.width, capabilites.maxImageExtent.width);
         actualExtent.height = std::clamp(actualExtent.height, capabilites.minImageExtent.height, capabilites.maxImageExtent.height);
         
         return actualExtent;
     }
 }   
+
+void SwapChain::recreateSwapChain() {
+    m_device->getDevice().waitIdle();
+    cleanup();
+    createSwapChain();
+    createImageViews();
+    createFrameBuffer();
+}
 
 void SwapChain::init() {
     createSwapChain();
@@ -53,7 +67,7 @@ void SwapChain::init() {
 }
 
 void SwapChain::createSwapChain() {
-    m_swapChainSupportDetails = m_ctx->getSwapChainSupportDetails();
+    m_swapChainSupportDetails = m_device->getSwapChainSupportDetails();
 
     m_surfaceFormat = chooseSwapSurfaceFormat(m_swapChainSupportDetails.formats);
     m_presentMode = choosePresentMode(m_swapChainSupportDetails.presentModes);
@@ -65,7 +79,7 @@ void SwapChain::createSwapChain() {
     }
 
     vk::SwapchainCreateInfoKHR swapChainCreateInfo = vk::SwapchainCreateInfoKHR{}
-        .setSurface(m_ctx->getSurface())
+        .setSurface(m_device->getSurface())
         .setMinImageCount(imageCount)
         .setImageFormat(m_surfaceFormat.format)
         .setImageColorSpace(m_surfaceFormat.colorSpace)
@@ -73,7 +87,7 @@ void SwapChain::createSwapChain() {
         .setImageArrayLayers(1)
         .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
-    auto queueFamilyIndices = m_ctx->getQueueFamilyIndices();
+    auto queueFamilyIndices = m_device->getQueueFamilyIndices();
     uint32_t queueIndices[] = { queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.presentFamily.value() };
     if (queueFamilyIndices.graphicsFamily != queueFamilyIndices.presentFamily) {
         swapChainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent)
@@ -96,6 +110,8 @@ void SwapChain::createSwapChain() {
     m_swapChainImages = m_deviceRef.getSwapchainImagesKHR(m_swapChain);
     m_swapChainImageFormat = m_surfaceFormat.format;
     m_swapChainExtent = m_extent;
+
+    INFO("Created SwapChain!");
 }
 
 void SwapChain::createImageViews() {
@@ -116,7 +132,7 @@ void SwapChain::createImageViews() {
             .setSubresourceRangeLevelCount(1)
             .setSubresourceRangeBaseArrayLayer(0)
             .setSubresourceRangeLayerCount(1)
-            .build(m_ctx));
+            .build(m_device));
     }
 }
 
@@ -135,7 +151,7 @@ void SwapChain::createRenderPass() {
                 .setAttachment(0)
                 .setLayout(vk::ImageLayout::eColorAttachmentOptimal))
             .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-            .build(m_ctx);
+            .build(m_device);
 }
 
 void SwapChain::createFrameBuffer() {
@@ -145,27 +161,38 @@ void SwapChain::createFrameBuffer() {
             .addAttachment(imageView)
             .setDimensions({m_swapChainExtent.width, m_swapChainExtent.height, 1})
             .setRenderPass(m_renderPass)
-            .build(m_ctx));
+            .build(m_device));
     }
 }
 
 void SwapChain::createSyncObjects() {
-    m_imageAvailableSemaphore = gfx::Semaphore::Builder{}.build(m_ctx);
-    m_renderFinishedSemaphore = gfx::Semaphore::Builder{}.build(m_ctx);
-    m_inFlightFence = gfx::Fence::Builder{}
-        .setFlags(vk::FenceCreateFlagBits::eSignaled)
-        .build(m_ctx);
+    m_imageAvailableSemaphore.reserve(MAX_FRAMES_IN_FLIGHT);
+    m_renderFinishedSemaphore.reserve(MAX_FRAMES_IN_FLIGHT);
+    m_inFlightFence.reserve(MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        m_imageAvailableSemaphore.emplace_back(gfx::Semaphore::Builder{}.build(m_device));
+        m_renderFinishedSemaphore.emplace_back(gfx::Semaphore::Builder{}.build(m_device));
+        m_inFlightFence.emplace_back(gfx::Fence::Builder{}
+            .setFlags(vk::FenceCreateFlagBits::eSignaled)
+            .build(m_device));
+    }
 }
 
-uint32_t SwapChain::acquireNextImage(uint64_t timeout) {
-    m_inFlightFence.wait(timeout);
-    m_inFlightFence.reset();
+std::optional<uint32_t> SwapChain::acquireNextImage(uint64_t timeout) {
+    m_inFlightFence[m_currentFrame].wait(timeout);
     uint32_t imageIndex;
-    auto res = m_ctx->getDevice().acquireNextImageKHR(m_swapChain, timeout, m_imageAvailableSemaphore.getSemaphore(), VK_NULL_HANDLE, &imageIndex);
-    if (res != vk::Result::eSuccess) {
+    auto res = m_device->getDevice().acquireNextImageKHR(m_swapChain, timeout, m_imageAvailableSemaphore[m_currentFrame].getSemaphore(), VK_NULL_HANDLE, &imageIndex);
+    if (res == vk::Result::eErrorOutOfDateKHR) {
+        recreateSwapChain();
+        return std::nullopt;
+    }
+    else if (res != vk::Result::eSuccess && res != vk::Result::eSuboptimalKHR) {
         throw std::runtime_error("Failed to acquire next image!");
     }
-    return imageIndex;
+
+    m_inFlightFence[m_currentFrame].reset();
+
+    return {imageIndex};
 }
 
 } // namespace gfx

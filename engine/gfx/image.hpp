@@ -1,7 +1,7 @@
 #ifndef GFX_IMAGE_HPP
 #define GFX_IMAGE_HPP
 
-#include "context.hpp"
+#include "device.hpp"
 
 #include "../core/types.hpp"
 
@@ -35,12 +35,12 @@ public:
         Builder& setSubresourceRangeBaseArrayLayer(uint32_t baseArrayLayer);
         Builder& setSubresourceRangeLayerCount(uint32_t arrayLayer);
 
-        ImageView build(const Context *ctx);
+        ImageView build(std::shared_ptr<Device> device);
 
         vk::ImageViewCreateInfo m_imageViewCreateInfo;
     };
 
-    ImageView() : m_ctx(nullptr), m_imageView(VK_NULL_HANDLE) {}
+    ImageView() : m_device(nullptr), m_imageView(VK_NULL_HANDLE) {}
 
     ~ImageView();
 
@@ -50,10 +50,10 @@ public:
     vk::ImageView getImageView() const { return m_imageView; }
 
 private:
-    ImageView(const Context *ctx, vk::ImageView imageView);
+    ImageView(std::shared_ptr<Device> device, vk::ImageView imageView);
 
 private:
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     vk::ImageView m_imageView;
 };
 
@@ -86,14 +86,14 @@ public:
         Builder& setUsage(vk::ImageUsageFlags imageUsageFlags);
         Builder& addQueueFamilyIndex(uint32_t queueFamilyIndex);
 
-        Image build(const Context *ctx);
+        Image build(std::shared_ptr<Device> device);
 
         vk::ImageCreateInfo m_imageCreateInfo{};
         // Note To Self: this is volatile memory (memory may be reallocated, make sure that the memory is stationary while creating the image!!!)
         std::vector<uint32_t> m_queueFamilyIndices;
     };
 
-    Image() : m_ctx(nullptr), m_image(VK_NULL_HANDLE), m_imageDeviceMemory(VK_NULL_HANDLE), m_format{} {}
+    Image() : m_device(nullptr), m_image(VK_NULL_HANDLE), m_imageDeviceMemory(VK_NULL_HANDLE), m_format{} {}
 
     ~Image();
 
@@ -105,10 +105,10 @@ public:
     // ImageView createImageView() const;
 
 private:
-    Image(const Context *ctx, vk::Image image, vk::DeviceMemory imageDeviceMemory, vk::Format format);
+    Image(std::shared_ptr<Device> device, vk::Image image, vk::DeviceMemory imageDeviceMemory, vk::Format format);
 
 private:
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     vk::Image m_image;
     vk::DeviceMemory m_imageDeviceMemory;
     vk::Format m_format;

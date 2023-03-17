@@ -1,16 +1,11 @@
 #include "image.hpp"
 
+#include "../core/log.hpp"
+
 namespace gfx {
 
 // **********Image::Builder**********
-Image::Builder::Builder() {
-    m_imageCreateInfo.setSamples(vk::SampleCountFlagBits::e1)
-                     .setTiling(vk::ImageTiling::eOptimal)
-                     .setSharingMode(vk::SharingMode::eExclusive)
-                     .setInitialLayout(vk::ImageLayout::eUndefined)
-                     .setMipLevels(1)
-                     .setArrayLayers(1);    
-}
+Image::Builder::Builder() {}
 
 Image::Builder& Image::Builder::setCreateFlags(vk::ImageCreateFlags imageCreateFlags) {
     m_imageCreateInfo.setFlags(imageCreateFlags);
@@ -62,65 +57,54 @@ Image::Builder& Image::Builder::addQueueFamilyIndex(uint32_t queueFamilyIndex) {
     return *this;
 }
 
-Image Image::Builder::build(const Context *ctx) {
+Image Image::Builder::build(std::shared_ptr<Device> device) {
     m_imageCreateInfo.setQueueFamilyIndexCount(m_queueFamilyIndices.size())
                      .setPQueueFamilyIndices(m_queueFamilyIndices.data());
 
     vk::Image image;
 
-    if (ctx->getDevice().createImage(&m_imageCreateInfo, nullptr, &image) != vk::Result::eSuccess) {
+    if (device->getDevice().createImage(&m_imageCreateInfo, nullptr, &image) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create Image!");
     }
 
-    vk::MemoryRequirements memoryRequirements = ctx->getDevice().getImageMemoryRequirements(image);
+    vk::MemoryRequirements memoryRequirements = device->getDevice().getImageMemoryRequirements(image);
     
     vk::MemoryAllocateInfo memoryAllocateInfo = vk::MemoryAllocateInfo{} 
         .setAllocationSize(memoryRequirements.size)
-        .setMemoryTypeIndex(ctx->findMemoryType(memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
+        .setMemoryTypeIndex(device->findMemoryType(memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
 
     vk::DeviceMemory deviceMemory;
 
-    if (ctx->getDevice().allocateMemory(&memoryAllocateInfo, nullptr, &deviceMemory) != vk::Result::eSuccess) {
+    if (device->getDevice().allocateMemory(&memoryAllocateInfo, nullptr, &deviceMemory) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to allocate device memory!");
     }
 
-    ctx->getDevice().bindImageMemory(image, deviceMemory, 0);
+    device->getDevice().bindImageMemory(image, deviceMemory, 0);
 
-    return {ctx, image, deviceMemory, m_imageCreateInfo.format};
+    INFO("Created Image!");
+
+    return {device, image, deviceMemory, m_imageCreateInfo.format};
 }
 
 // **********Image**********
-Image::Image(const Context *ctx, vk::Image image, vk::DeviceMemory imageDeviceMemory, vk::Format format) : m_ctx(ctx), m_image(image), m_imageDeviceMemory(imageDeviceMemory), m_format(format) {
+Image::Image(std::shared_ptr<Device> device, vk::Image image, vk::DeviceMemory imageDeviceMemory, vk::Format format) : m_device(device), m_image(image), m_imageDeviceMemory(imageDeviceMemory), m_format(format) {
 
 }
 
 Image::~Image() {
-    if (m_image) m_ctx->getDevice().destroyImage(m_image);
-    if (m_imageDeviceMemory) m_ctx->getDevice().freeMemory(m_imageDeviceMemory);
+    if (m_image) m_device->getDevice().destroyImage(m_image);
+    if (m_imageDeviceMemory) m_device->getDevice().freeMemory(m_imageDeviceMemory);
     m_image = VK_NULL_HANDLE;
     m_imageDeviceMemory = VK_NULL_HANDLE;
 }
 
-Image::Image(Image&& image) : m_ctx(image.m_ctx), m_image(image.m_image), m_imageDeviceMemory(image.m_imageDeviceMemory), m_format(image.m_format) {
+Image::Image(Image&& image) : m_device(image.m_device), m_image(image.m_image), m_imageDeviceMemory(image.m_imageDeviceMemory), m_format(image.m_format) {
     image.m_image = VK_NULL_HANDLE;
     image.m_imageDeviceMemory = VK_NULL_HANDLE;
 }
 
-// ImageView Image::createImageView() const {
-//     return ImageView::Builder{}
-//         .setFormat(getFormat())
-//         .build(m_ctx);
-// }
-
 // **********ImageView::Builder*********
-ImageView::Builder::Builder() {
-    m_imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    m_imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    m_imageViewCreateInfo.subresourceRange.levelCount = 1;
-    m_imageViewCreateInfo.subresourceRange.layerCount = 1;
-    m_imageViewCreateInfo.components = vk::ComponentMapping{ vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA };
-
-}
+ImageView::Builder::Builder() {}
 
 ImageView::Builder& ImageView::Builder::setFlags(vk::ImageViewCreateFlags flags) {
     m_imageViewCreateInfo.setFlags(flags);
@@ -177,7 +161,7 @@ ImageView::Builder& ImageView::Builder::setSubresourceRangeLayerCount(uint32_t a
     return *this;
 }
 
-ImageView ImageView::Builder::build(const Context *ctx) {
+ImageView ImageView::Builder::build(std::shared_ptr<Device> device) {
 
     if (!m_imageViewCreateInfo.image) {
         throw std::runtime_error("Image not set, Didnt call .setImage(Image)");
@@ -185,25 +169,27 @@ ImageView ImageView::Builder::build(const Context *ctx) {
 
     vk::ImageView imageView;
 
-    if (ctx->getDevice().createImageView(&m_imageViewCreateInfo, nullptr, &imageView) != vk::Result::eSuccess) {
+    if (device->getDevice().createImageView(&m_imageViewCreateInfo, nullptr, &imageView) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create image view!");
     }
 
-    return {ctx, imageView};
+    INFO("Created Image View!");
+
+    return {device, imageView};
 }
 
 
 // **********ImageView**********
-ImageView::ImageView(const Context *ctx, vk::ImageView imageView) : m_ctx(ctx), m_imageView(imageView) {
+ImageView::ImageView(std::shared_ptr<Device> device, vk::ImageView imageView) : m_device(device), m_imageView(imageView) {
 
 }
 
 ImageView::~ImageView() {
-    if (m_imageView) m_ctx->getDevice().destroyImageView(m_imageView);
+    if (m_imageView) m_device->getDevice().destroyImageView(m_imageView);
     m_imageView = VK_NULL_HANDLE;
 }
 
-ImageView::ImageView(ImageView&& imageView) : m_ctx(imageView.m_ctx), m_imageView(imageView.m_imageView) {
+ImageView::ImageView(ImageView&& imageView) : m_device(imageView.m_device), m_imageView(imageView.m_imageView) {
     imageView.m_imageView = { VK_NULL_HANDLE };
 }
 

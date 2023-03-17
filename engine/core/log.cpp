@@ -13,7 +13,7 @@ bool Log::init() {
     std::vector<spdlog::sink_ptr> logSink;
     logSink.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 
-    spdlog::set_pattern("%^[%T] %n: %v%$");
+    spdlog::set_pattern("%v");
     m_logger = std::make_shared<spdlog::logger>("Engine", begin(logSink), end(logSink));
     if (m_logger) {
         ok = true;

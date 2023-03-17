@@ -1,7 +1,7 @@
 #ifndef GFX_SWAPCHAIN_HPP
 #define GFX_SWAPCHAIN_HPP
 
-#include "context.hpp"
+#include "device.hpp"
 #include "image.hpp"
 #include "framebuffer.hpp"
 #include "renderpass.hpp"
@@ -11,7 +11,7 @@ namespace gfx {
 
 class SwapChain {
 public:
-    SwapChain(const Context *ctx, const vk::Extent2D& windowExtent);
+    SwapChain(std::shared_ptr<Device> device, uint32_t maxFramesInFlight);
 
     ~SwapChain();
 
@@ -25,11 +25,17 @@ public:
     RenderPass& getSwapChainRenderPass() { return m_renderPass; }
     std::vector<FrameBuffer>& getSwapChainFrameBuffers() { return m_swapChainFrameBuffer; }
     // currently hardcoding sync objects in swapchain
-    uint32_t acquireNextImage(uint64_t timeout = UINT64_MAX);
-    Semaphore& getImageAvailableSemaphore() { return m_imageAvailableSemaphore; }
-    Semaphore& getRenderFinishedSemaphore() { return m_renderFinishedSemaphore; }
-    Fence& getInFlightFence() { return m_inFlightFence; }
+    std::optional<uint32_t> acquireNextImage(uint64_t timeout = UINT64_MAX);
+    Semaphore& getCurrentImageAvailableSemaphore() { return m_imageAvailableSemaphore[m_currentFrame]; }
+    Semaphore& getCurrentRenderFinishedSemaphore() { return m_renderFinishedSemaphore[m_currentFrame]; }
+    Fence& getCurrentInFlightFence() { return m_inFlightFence[m_currentFrame]; }
     vk::SwapchainKHR getSwapChain() const { return m_swapChain; }
+    uint32_t getCurrentFrameIndex() const { return m_currentFrame; }
+    void advanceCurrentFrame() { m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT; }
+    void recreateSwapChain();
+
+public:
+    const uint32_t MAX_FRAMES_IN_FLIGHT;
 
 private:
     void init();
@@ -43,12 +49,15 @@ private:
     vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
     vk::PresentModeKHR choosePresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes);
     vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilites);
+    void cleanup();
 
 private:
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     const vk::Device& m_deviceRef;
 
-    Context::SwapChainSupportDetails m_swapChainSupportDetails; 
+    uint32_t                         m_currentFrame{0};
+
+    Device::SwapChainSupportDetails  m_swapChainSupportDetails; 
     vk::SurfaceFormatKHR             m_surfaceFormat;
     vk::PresentModeKHR               m_presentMode;
     vk::Extent2D                     m_extent;
@@ -59,9 +68,9 @@ private:
     std::vector<ImageView>           m_swapChainImageViews;
     RenderPass                       m_renderPass;
     std::vector<FrameBuffer>         m_swapChainFrameBuffer;
-    gfx::Semaphore                   m_imageAvailableSemaphore;
-    gfx::Semaphore                   m_renderFinishedSemaphore;
-    gfx::Fence                       m_inFlightFence;
+    std::vector<gfx::Semaphore>      m_imageAvailableSemaphore;
+    std::vector<gfx::Semaphore>      m_renderFinishedSemaphore;
+    std::vector<gfx::Fence>          m_inFlightFence;
 };
 
 } // namespace gfx

@@ -52,7 +52,7 @@ RenderPass::Builder& RenderPass::Builder::setRenderpassFlags(vk::RenderPassCreat
     return *this;
 }
 
-RenderPass RenderPass::Builder::build(const Context *ctx) {
+RenderPass RenderPass::Builder::build(std::shared_ptr<Device> device) {
 
     m_subpassDescription.setColorAttachmentCount(m_colorAttachmentRefrences.size())
                         .setPColorAttachments(m_colorAttachmentRefrences.data())
@@ -67,29 +67,31 @@ RenderPass RenderPass::Builder::build(const Context *ctx) {
                           .setSubpassCount(1);
     
     vk::RenderPass renderPass;
-    if (ctx->getDevice().createRenderPass(&m_renderPassCreateInfo, nullptr, &renderPass) != vk::Result::eSuccess) {
+    if (device->getDevice().createRenderPass(&m_renderPassCreateInfo, nullptr, &renderPass) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create render pass!");
     }
 
-    return {ctx, renderPass};
+    INFO("Created Render Pass!");
+
+    return {device, renderPass};
 }
 
 // **********RenderPass**********
-RenderPass::RenderPass(const Context *ctx, vk::RenderPass renderPass) : m_ctx(ctx), m_renderPass(renderPass) {}
+RenderPass::RenderPass(std::shared_ptr<Device> device, vk::RenderPass renderPass) : m_device(device), m_renderPass(renderPass) {}
 
 RenderPass::~RenderPass() {
-    if (m_renderPass) m_ctx->getDevice().destroyRenderPass(m_renderPass);
+    if (m_renderPass) m_device->getDevice().destroyRenderPass(m_renderPass);
     m_renderPass = VK_NULL_HANDLE;
 }
 
-RenderPass::RenderPass(RenderPass&& renderPass) : m_ctx(renderPass.m_ctx), m_renderPass(renderPass.m_renderPass) {
+RenderPass::RenderPass(RenderPass&& renderPass) : m_device(renderPass.m_device), m_renderPass(renderPass.m_renderPass) {
     renderPass.m_renderPass = VK_NULL_HANDLE;
 }
 
 RenderPass& RenderPass::operator=(RenderPass&& renderPass) {
-    m_ctx = renderPass.m_ctx;
+    m_device = renderPass.m_device;
     m_renderPass = renderPass.m_renderPass;
-    renderPass.m_ctx = nullptr;
+    renderPass.m_device = nullptr;
     renderPass.m_renderPass = VK_NULL_HANDLE;
     return *this;
 }

@@ -1,7 +1,7 @@
 #ifndef GFX_RENDERPASS_HPP
 #define GFX_RENDERPASS_HPP
 
-#include "context.hpp"
+#include "device.hpp"
 #include "framebuffer.hpp"
 #include "commandbuffer.hpp"
 
@@ -22,7 +22,7 @@ public:
         Builder& setSubpassFlags(vk::SubpassDescriptionFlags subpassDescriptionFlags);
         Builder& setRenderpassFlags(vk::RenderPassCreateFlags renderpassCreateFlags);
 
-        RenderPass build(const Context *ctx);
+        RenderPass build(std::shared_ptr<Device> device);
         
         std::vector<vk::AttachmentReference> m_colorAttachmentRefrences;
         vk::AttachmentReference m_depthStencilAttachmentRefrence;
@@ -36,7 +36,7 @@ public:
         bool setResolveAttachment = false, setDepthStencilAttachment = false;
     };
     
-    RenderPass() : m_ctx(nullptr), m_renderPass(VK_NULL_HANDLE) {}
+    RenderPass() : m_device(nullptr), m_renderPass(VK_NULL_HANDLE) {}
     
     ~RenderPass();
 
@@ -61,10 +61,10 @@ public:
     void end(const CommandBuffer& commandBuffer);
 
 private:
-    RenderPass(const Context *ctx, vk::RenderPass renderPass);
+    RenderPass(std::shared_ptr<Device> device, vk::RenderPass renderPass);
 
 private:
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     vk::RenderPass m_renderPass;
 };
 

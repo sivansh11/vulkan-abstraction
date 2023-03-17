@@ -1,6 +1,7 @@
 #include "framebuffer.hpp"
 
 #include "renderpass.hpp"
+#include "../core/log.hpp"
 
 namespace gfx {
 
@@ -29,30 +30,32 @@ FrameBuffer::Builder& FrameBuffer::Builder::setDimensions(const core::Dimensions
     return *this;
 }
 
-FrameBuffer FrameBuffer::Builder::build(const Context *ctx) {
+FrameBuffer FrameBuffer::Builder::build(std::shared_ptr<Device> device) {
     m_frameBufferCreateInfo.setAttachmentCount(m_imageViews.size())
                            .setPAttachments(m_imageViews.data());
     
     vk::Framebuffer frameBuffer;
 
-    if (ctx->getDevice().createFramebuffer(&m_frameBufferCreateInfo, nullptr, &frameBuffer) != vk::Result::eSuccess) {
+    if (device->getDevice().createFramebuffer(&m_frameBufferCreateInfo, nullptr, &frameBuffer) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create frame buffer!");
     }
 
-    return {ctx, frameBuffer};
+    INFO("Created FrameBuffer!");
+
+    return {device, frameBuffer};
 }
 
 // **********FrameBuffer**********
-FrameBuffer::FrameBuffer(const Context *ctx, vk::Framebuffer frameBuffer) : m_ctx(ctx), m_frameBuffer(frameBuffer) {
+FrameBuffer::FrameBuffer(std::shared_ptr<Device> device, vk::Framebuffer frameBuffer) : m_device(device), m_frameBuffer(frameBuffer) {
 
 }
 
 FrameBuffer::~FrameBuffer() {
-    if (m_frameBuffer) m_ctx->getDevice().destroyFramebuffer(m_frameBuffer);
+    if (m_frameBuffer) m_device->getDevice().destroyFramebuffer(m_frameBuffer);
     m_frameBuffer = VK_NULL_HANDLE;
 }
 
-FrameBuffer::FrameBuffer(FrameBuffer&& frameBuffer) : m_ctx(frameBuffer.m_ctx), m_frameBuffer(frameBuffer.m_frameBuffer) {
+FrameBuffer::FrameBuffer(FrameBuffer&& frameBuffer) : m_device(frameBuffer.m_device), m_frameBuffer(frameBuffer.m_frameBuffer) {
     frameBuffer.m_frameBuffer = VK_NULL_HANDLE;
 }
 

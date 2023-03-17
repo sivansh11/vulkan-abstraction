@@ -1,13 +1,14 @@
 #include "core/window.hpp"
 #include "core/core.hpp"
 #include "core/log.hpp"
-#include "gfx/context.hpp"
+#include "gfx/device.hpp"
 #include "gfx/swapchain.hpp"
 #include "gfx/program.hpp"
-#include "gfx/image.hpp"
-#include "gfx/framebuffer.hpp"
 #include "gfx/commandbuffer.hpp"
-#include "gfx/syncobjects.hpp"
+#include "gfx/renderer.hpp"
+#include "gfx/buffer.hpp"
+
+#include <memory>
 
 int main() {
     if (!core::Log::init()) {
@@ -16,30 +17,9 @@ int main() {
 
     core::Window window{640, 420, "Test"};
 
-    gfx::Context ctx{window, true};
-    gfx::SwapChain swapChain{&ctx, {640, 420}};
-
-    // gfx::Image image = gfx::Image::Builder{}
-    //     .setArrayLayers(1)
-    //     .setExtent(core::Dimensions{250, 250, 1})
-    //     .setFormat(vk::Format::eB8G8R8A8Srgb)
-    //     .setMipLevels(1)
-    //     .setType(vk::ImageType::e2D) 
-    //     .setUsage(vk::ImageUsageFlagBits::eColorAttachment)
-    //     .build(&ctx);
-
-    // gfx::ImageView imageView = gfx::ImageView::Builder{}
-    //     .setFormat(vk::Format::eB8G8R8A8Srgb)
-    //     .setViewType(vk::ImageViewType::e2D)
-    //     .setSubresourceRangeAspectMask(vk::ImageAspectFlagBits::eColor)
-    //     .setImage(image)
-    //     .build(&ctx);
-
-    // gfx::FrameBuffer frameBuffer = gfx::FrameBuffer::Builder{}
-    //     .setDimensions({250, 250, 1})
-    //     .setRenderPass(swapChain.getSwapChainRenderPass())
-    //     .addAttachment(imageView)
-    //     .build(&ctx);
+    std::shared_ptr<gfx::Device> device = std::make_shared<gfx::Device>(window, true);  
+    gfx::SwapChain swapChain{device, 3};
+    gfx::Renderer renderer = gfx::Renderer::Builder{}.build(device, swapChain);
 
     gfx::GraphicsProgram program = gfx::GraphicsProgram::Builder{}
         .addShaderFromPath("../../../assets/shader/test.vert")
@@ -71,79 +51,47 @@ int main() {
             .setBlendEnable(vk::Bool32{ false }))
         .setColorBlendStateLogicOpEnable(false)
         .setRenderPass(swapChain.getSwapChainRenderPass())
-        .build(&ctx);
+        .build(device);
 
-    gfx::CommandPool commandPool = gfx::CommandPool::Builder{}
-        .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-        .setQueueFamilyIndex(ctx.getQueueFamilyIndices().graphicsFamily.value())
-        .build(&ctx);
-
-
-    auto commandBuffers = commandPool.createCommandBuffer(1);
-    auto& commandBuffer = commandBuffers[0];
-
-    auto& renderPass = swapChain.getSwapChainRenderPass();
-
-    auto recordCommandBuffer = [&](uint32_t imageIndex) {
-        commandBuffer.begin();
-
-        renderPass.begin(commandBuffer, gfx::RenderPass::BeginInfo{}
-            .setFrameBuffer(swapChain.getSwapChainFrameBuffers()[imageIndex])
-            .setRenderArea(vk::Rect2D{}
-                .setOffset({0, 0})
-                .setExtent(swapChain.getSwapchainExtent()))            
-            .addClearValue(vk::ClearValue{}
-                .setColor(vk::ClearColorValue{std::array{0.f, 0.f, 0.f, 1.f}})));
-
-        program.bind(commandBuffer);
-
-        vk::Viewport viewPort;
-        viewPort.x = viewPort.y = 0;
-        viewPort.width = swapChain.getSwapchainExtent().width;
-        viewPort.height = swapChain.getSwapchainExtent().height;
-        viewPort.minDepth = 0;
-        viewPort.maxDepth = 1;
-        commandBuffer.getCommandBuffer().setViewport(0, 1, &viewPort);
-        
-        vk::Rect2D scissor;
-        scissor.offset = vk::Offset2D{0, 0};
-        scissor.extent = swapChain.getSwapchainExtent();
-        commandBuffer.getCommandBuffer().setScissor(0, 1, &scissor);
-
-        commandBuffer.getCommandBuffer().draw(3, 1, 0, 0);
-
-        renderPass.end(commandBuffer);
-
-        commandBuffer.end();
-    };
-
-    auto drawFrame = [&]() {
-        uint32_t imageIndex = swapChain.acquireNextImage();
-        commandBuffer.reset();
-        recordCommandBuffer(imageIndex);
-        ctx.submit(gfx::Context::QueueSubmitInfo{}
-            .addCommandBuffer(commandBuffer)
-            .addWaitSemaphore(swapChain.getImageAvailableSemaphore())
-            .addWaitStage(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-            .addSignalSemaphore(swapChain.getRenderFinishedSemaphore())
-            .setFence(swapChain.getInFlightFence())
-        );
-
-        ctx.present(gfx::Context::PresentInfo{}
-            .addWaitSemaphore(swapChain.getRenderFinishedSemaphore())
-            .setImageIndex(imageIndex)
-            .setSwapChain(swapChain)
-        );
-    };
+    gfx::Buffer buffer = gfx::Buffer::Builder{}
+        .setMemoryProperty(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible)
+        .setSharingMode(vk::SharingMode::eExclusive)
+        .setSize(25)
+        .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
+        .build(device);
 
     while (!window.shouldClose()) {
         core::Window::pollEvents();
 
-        // auto [width, height] = window.getDimensions();
-        drawFrame();
+        if (auto res = renderer.begin()) {
+            auto [commandBuffer, imageIndex] = res.value();
+
+            renderer.beginSwapChainRenderPass();
+
+            program.bind(commandBuffer);
+
+            vk::Viewport viewPort;
+            viewPort.x = viewPort.y = 0;
+            viewPort.width = swapChain.getSwapchainExtent().width;
+            viewPort.height = swapChain.getSwapchainExtent().height;
+            viewPort.minDepth = 0;
+            viewPort.maxDepth = 1;
+            commandBuffer.getCommandBuffer().setViewport(0, 1, &viewPort);
+            
+            vk::Rect2D scissor;
+            scissor.offset = vk::Offset2D{0, 0};
+            scissor.extent = swapChain.getSwapchainExtent();
+            commandBuffer.getCommandBuffer().setScissor(0, 1, &scissor);
+
+            commandBuffer.getCommandBuffer().draw(3, 1, 0, 0);
+
+            renderer.endSwapChainRenderPass();
+
+            renderer.end();
+        }
     }
 
-    ctx.getDevice().waitIdle();
+device->getDevice().waitIdle();
 
     return 0;
 }

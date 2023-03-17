@@ -1,7 +1,7 @@
 #ifndef GFX_COMMANDBUFFER_HPP
 #define GFX_COMMANDBUFFER_HPP
 
-#include "context.hpp"
+#include "device.hpp"
 
 namespace gfx {
 
@@ -17,7 +17,7 @@ public:
     ~CommandBuffer();
 
     CommandBuffer(CommandBuffer&& commandPool);
-    CommandBuffer(const CommandBuffer&) = delete;
+    CommandBuffer(const CommandBuffer&) = default;
 
     vk::CommandBuffer getCommandBuffer() const { return m_commandBuffer; }
 
@@ -32,24 +32,26 @@ public:
 
         Builder& setFlags(vk::CommandPoolCreateFlags flags);
         Builder& setQueueFamilyIndex(uint32_t queueFamilyIndex);
-        CommandPool build(const Context *ctx);
+        CommandPool build(std::shared_ptr<Device> device);
 
         vk::CommandPoolCreateInfo m_commandPoolCreateInfo;
     };
 
-    CommandPool() : m_ctx(nullptr), m_commandPool(VK_NULL_HANDLE) {}
+    CommandPool() : m_device(nullptr), m_commandPool(VK_NULL_HANDLE) {}
     ~CommandPool();
 
     CommandPool(CommandPool&& commandPool);
     CommandPool(const CommandPool&) = delete;
 
+    CommandPool& operator=(CommandPool&& commandPool);
+
     std::vector<CommandBuffer> createCommandBuffer(uint32_t commandBufferCount);
 
 private:
-    CommandPool(const Context *ctx, vk::CommandPool commandPool);
+    CommandPool(std::shared_ptr<Device> device, vk::CommandPool commandPool);
 
 private:    
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     vk::CommandPool m_commandPool;
 };
 

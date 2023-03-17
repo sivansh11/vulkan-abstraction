@@ -26,34 +26,7 @@ static std::string readFile(const std::filesystem::path& path) {
 
 
 // **********************GraphicsProgram::Builder*****************************
-GraphicsProgram::Builder::Builder() {
-    m_pipelineInputAssemblyStateCreateInfo.setTopology(vk::PrimitiveTopology::eTriangleList)
-                                          .setPrimitiveRestartEnable(vk::Bool32{ VK_FALSE });
-
-    m_pipelineRasterizationStateCreateInfo.setDepthClampEnable(vk::Bool32{ false })
-                                          .setRasterizerDiscardEnable(vk::Bool32{ false })
-                                          .setPolygonMode(vk::PolygonMode::eFill)
-                                          .setLineWidth(1.0f)
-                                          .setCullMode(vk::CullModeFlagBits::eBack)
-                                          .setFrontFace(vk::FrontFace::eClockwise)
-                                          .setDepthBiasEnable(vk::Bool32{ false })
-                                          .setDepthBiasConstantFactor(0.f)
-                                          .setDepthBiasClamp(0.f)
-                                          .setDepthBiasSlopeFactor(0.f);
-
-    m_sampleMask = 0;
-
-    m_pipelineMultisampleStateCreateInfo.setSampleShadingEnable(vk::Bool32{ false })
-                                        .setRasterizationSamples(vk::SampleCountFlagBits::e1)
-                                        .setMinSampleShading(1.0f)
-                                        .setPSampleMask(&m_sampleMask)
-                                        .setAlphaToCoverageEnable(vk::Bool32{ false })
-                                        .setAlphaToOneEnable(vk::Bool32{ false });
-
-    m_pipelineColorBlendStateCreateInfo.setLogicOpEnable(vk::Bool32{ false })
-                                       .setLogicOp(vk::LogicOp::eCopy)
-                                       .setBlendConstants({0, 0, 0, 0});
-}
+GraphicsProgram::Builder::Builder() {}
 
 GraphicsProgram::Builder& GraphicsProgram::Builder::addShaderFromPath(const std::filesystem::path& shaderPath) {
     m_shaderPaths.emplace(shaderPath);
@@ -153,10 +126,10 @@ GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplinMinSampleShad
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplingSampleMask(vk::SampleMask sampleMask) {
-    m_sampleMask = sampleMask;
-    return *this;
-}
+// GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplingSampleMask(vk::SampleMask sampleMask) {
+//     m_sampleMask = sampleMask;
+//     return *this;
+// }
 
 GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplingAlphaToCoverageEnable(bool enable) {
     m_pipelineMultisampleStateCreateInfo.setAlphaToCoverageEnable(vk::Bool32{ enable });
@@ -213,22 +186,22 @@ GraphicsProgram::Builder& GraphicsProgram::Builder::addLayoutDescriptorSet(const
     return *this;
 }
 
+GraphicsProgram::Builder& GraphicsProgram::Builder::addVertexInputBindingDescription(const vk::VertexInputBindingDescription& vertexInputBindingDescription) {
+    m_vertexInputBindingDescriptions.push_back(vertexInputBindingDescription);
+    return *this;
+}
+
+GraphicsProgram::Builder& GraphicsProgram::Builder::addVertexInputAttributeDescription(const vk::VertexInputAttributeDescription& vertexInputAttributeDescription) {
+    m_vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
+    return *this;
+}
+
 GraphicsProgram::Builder& GraphicsProgram::Builder::setRenderPass(const RenderPass& renderPass) {
     m_renderPass = renderPass.getRenderPass();
     return *this;
 }
 
-// GraphicsProgram::Builder& GraphicsProgram::Builder::addRenderPassSubpass(const vk::SubpassDescription& subpass) {
-//     m_subpassDescriptions.push_back(subpass);
-//     return *this;
-// }
-
-// GraphicsProgram::Builder& GraphicsProgram::Builder::addRenderPassAttachmentDescription(const vk::AttachmentDescription& attachment) {
-//     m_attachmentDescriptions.push_back(attachment);
-//     return *this;
-// }
-
-GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
+GraphicsProgram GraphicsProgram::Builder::build(std::shared_ptr<Device> device) {
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     pipelineLayoutCreateInfo.setPushConstantRangeCount(m_pushConstantRanges.size())
                             .setPPushConstantRanges(m_pushConstantRanges.data())
@@ -236,7 +209,7 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
                             .setPSetLayouts(m_descriptorSetLayout.data());
 
     vk::PipelineLayout pipelineLayout;
-    if (ctx->getDevice().createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != vk::Result::eSuccess) {
+    if (device->getDevice().createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create pipeline layout!");
     }
 
@@ -299,7 +272,7 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
 
         vk::ShaderModule shaderModule;
 
-        if (ctx->getDevice().createShaderModule(&shaderModuleCreateInfo, nullptr, &shaderModule) != vk::Result::eSuccess) {
+        if (device->getDevice().createShaderModule(&shaderModuleCreateInfo, nullptr, &shaderModule) != vk::Result::eSuccess) {
             throw std::runtime_error("Failed to create shader module!");
         }
         shaderModules.push_back(shaderModule);
@@ -314,7 +287,11 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
 
     // TODO: Do this correctly
     // hack
-    vk::PipelineVertexInputStateCreateInfo vertexInput = vk::PipelineVertexInputStateCreateInfo{};
+    vk::PipelineVertexInputStateCreateInfo vertexInput = vk::PipelineVertexInputStateCreateInfo{}
+        .setVertexBindingDescriptionCount(m_vertexInputBindingDescriptions.size())
+        .setPVertexBindingDescriptions(m_vertexInputBindingDescriptions.data())
+        .setVertexAttributeDescriptionCount(m_vertexInputAttributeDescriptions.size())
+        .setPVertexAttributeDescriptions(m_vertexInputAttributeDescriptions.data());
 
     vk::PipelineViewportStateCreateInfo viewportState = vk::PipelineViewportStateCreateInfo{}
         .setViewportCount(m_viewports.size())
@@ -329,7 +306,7 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
         .setDynamicStateCount(m_dynamicStates.size())
         .setPDynamicStates(m_dynamicStates.data());
 
-    m_pipelineMultisampleStateCreateInfo.setPSampleMask(&m_sampleMask);
+    m_pipelineMultisampleStateCreateInfo.setPSampleMask(nullptr);
 
     vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo = vk::GraphicsPipelineCreateInfo{}
         .setStageCount(pipelineShaderStageCreateInfos.size())
@@ -350,7 +327,7 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
 
     vk::Pipeline graphicsPipline;
 
-    auto graphicsPipelineResult = ctx->getDevice().createGraphicsPipeline(VK_NULL_HANDLE, graphicsPipelineCreateInfo);
+    auto graphicsPipelineResult = device->getDevice().createGraphicsPipeline(VK_NULL_HANDLE, graphicsPipelineCreateInfo);
 
     if (graphicsPipelineResult.result != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create graphics pipeline!");
@@ -360,20 +337,20 @@ GraphicsProgram GraphicsProgram::Builder::build(const Context *ctx) {
 
     INFO("Created a Graphics Pipeline!");
 
-    return {ctx, graphicsPipline, pipelineLayout, shaderModules};
+    return {device, graphicsPipline, pipelineLayout, shaderModules};
 }
 
 // **********************GRAPHICSPROGRAM*********************
-GraphicsProgram::GraphicsProgram(const Context *ctx, const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, const std::vector<vk::ShaderModule>& shaderModules) : m_ctx(ctx), m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_shaderModules(shaderModules) {
+GraphicsProgram::GraphicsProgram(std::shared_ptr<Device> device, const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, const std::vector<vk::ShaderModule>& shaderModules) : m_device(device), m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_shaderModules(shaderModules) {
 
 }
 
 GraphicsProgram::~GraphicsProgram() {
     for (auto& shaderModule : m_shaderModules) {
-        m_ctx->getDevice().destroyShaderModule(shaderModule);
+        m_device->getDevice().destroyShaderModule(shaderModule);
     }
-    m_ctx->getDevice().destroyPipelineLayout(m_pipelineLayout);
-    m_ctx->getDevice().destroyPipeline(m_pipeline);
+    m_device->getDevice().destroyPipelineLayout(m_pipelineLayout);
+    m_device->getDevice().destroyPipeline(m_pipeline);
 }
 
 void GraphicsProgram::bind(const CommandBuffer& commandBuffer) {

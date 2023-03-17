@@ -1,7 +1,7 @@
 #ifndef GFX_FRAMEBUFFER_HPP
 #define GFX_FRAMEBUFFER_HPP
 
-#include "context.hpp"
+#include "device.hpp"
 #include "../core/types.hpp"
 #include "image.hpp"
 
@@ -20,13 +20,13 @@ public:
         Builder& addAttachment(const ImageView& imageView);
         Builder& setDimensions(const core::Dimensions& dimensions);
 
-        FrameBuffer build(const Context *ctx);
+        FrameBuffer build(std::shared_ptr<Device> device);
 
         vk::FramebufferCreateInfo m_frameBufferCreateInfo;
         std::vector<vk::ImageView> m_imageViews;
     };
 
-    FrameBuffer() : m_ctx(nullptr), m_frameBuffer(VK_NULL_HANDLE) {}
+    FrameBuffer() : m_device(nullptr), m_frameBuffer(VK_NULL_HANDLE) {}
 
     ~FrameBuffer();
     FrameBuffer(FrameBuffer&& frameBuffer);
@@ -36,10 +36,10 @@ public:
     vk::Framebuffer getFrameBuffer() const { return m_frameBuffer; }
 
 private:
-    FrameBuffer(const Context *ctx, vk::Framebuffer frameBuffer);
+    FrameBuffer(std::shared_ptr<Device> device, vk::Framebuffer frameBuffer);
 
 private:
-    const Context *m_ctx;
+    std::shared_ptr<Device> m_device;
     vk::Framebuffer m_frameBuffer;
     
 };

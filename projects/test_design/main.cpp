@@ -14,9 +14,9 @@ int main() {
 
     core::Window window{640, 420, "Test"};
 
-    gfx::Context ctx{window, true};
+    gfx::Device device{window, true};
 
-    gfx::SwapChain swapChain{ctx, window.getDimensions()};
+    gfx::SwapChain swapChain{&device, window.getDimensions()};
     
     while (!window.shouldClose()) {
         core::Window::pollEvents();
