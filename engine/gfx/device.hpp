@@ -114,6 +114,8 @@ private:
     vk::Device                             m_device;
     vk::Queue                              m_graphicsQueue;
     vk::Queue                              m_presentQueue;
+    vk::CommandPool                        m_commandPool;
+    std::vector<vk::CommandBuffer>         m_commandBuffers;
 };
 
 } // namespace gfx

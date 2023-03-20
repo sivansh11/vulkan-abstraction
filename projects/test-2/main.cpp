@@ -150,10 +150,9 @@ int main(int argc, char **argv) {
             renderer.end();
         }
 
-        // auto res = renderer.begin();
     }
 
-device->getDevice().waitIdle();
+    device->getDevice().waitIdle();
 
     return 0;
 }

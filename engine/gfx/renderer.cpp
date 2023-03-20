@@ -18,6 +18,10 @@ Renderer::Renderer(std::shared_ptr<Device> device, SwapChain& swapChain) : m_dev
     m_commandBuffers = m_commandPool.createCommandBuffer(m_swapChain.MAX_FRAMES_IN_FLIGHT);
 }
 
+Renderer::~Renderer() {
+
+}
+
 std::optional<Renderer::CommandBufferImageIndex> Renderer::begin() {
     auto res = m_swapChain.acquireNextImage();
     if (!res) 

@@ -15,7 +15,7 @@ public:
 
     Renderer(const Renderer&) = delete;
 
-    ~Renderer() = default;
+    ~Renderer();
 
     struct CommandBufferImageIndex {
         CommandBuffer commandBuffer;
