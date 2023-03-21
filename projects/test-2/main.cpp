@@ -5,7 +5,7 @@
 #include "gfx/swapchain.hpp"
 #include "gfx/program.hpp"
 #include "gfx/commandbuffer.hpp"
-#include "gfx/renderer.hpp"
+#include "renderer/renderer.hpp"
 #include "gfx/buffer.hpp"
 
 #include <memory>
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
     std::shared_ptr<gfx::Device> device = std::make_shared<gfx::Device>(window, true);  
     gfx::SwapChain swapChain{device, 3};
-    gfx::Renderer renderer = gfx::Renderer::Builder{}.build(device, swapChain);
+    renderer::Renderer renderer = renderer::Renderer::Builder{}.build(device, swapChain);
     
     struct Vertex {
         vec2 pos;
@@ -83,21 +83,38 @@ int main(int argc, char **argv) {
     };
 
     const std::vector<Vertex> vertices = {
-        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
     };
 
-    gfx::Buffer buffer = gfx::Buffer::Builder{}
+    const std::vector<uint32_t> indices = {
+        0, 1, 2, 2, 3, 0
+    };
+
+    gfx::Buffer vertexBuffer = gfx::Buffer::Builder{}
         .setMemoryProperty(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible)
         .setSharingMode(vk::SharingMode::eExclusive)
         .setSize(sizeof(Vertex) * vertices.size())
         .setUsage(vk::BufferUsageFlagBits::eVertexBuffer)
         .build(device);
 
-    buffer.map();
-    std::memcpy(buffer.getMapped(), vertices.data(), sizeof(Vertex) * vertices.size());
-    buffer.unmap();
+    gfx::Buffer indexBuffer = gfx::Buffer::Builder{}
+        .setMemoryProperty(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible)
+        .setSharingMode(vk::SharingMode::eExclusive)
+        .setSize(sizeof(uint32_t) * indices.size())
+        .setUsage(vk::BufferUsageFlagBits::eIndexBuffer)
+        .build(device);
+
+    vertexBuffer.map();
+    std::memcpy(vertexBuffer.getMapped(), vertices.data(), sizeof(Vertex) * vertices.size());
+    vertexBuffer.unmap();
+
+    indexBuffer.map();
+    std::memcpy(indexBuffer.getMapped(), indices.data(), sizeof(uint32_t) * indices.size());
+    indexBuffer.unmap();
+
 
     gfx::GraphicsProgram program = gfx::GraphicsProgram::Builder{}
         .addShaderFromPath("../../../assets/shader/test-2.vert")
@@ -110,13 +127,13 @@ int main(int argc, char **argv) {
         .addViewport(vk::Viewport{}
             .setX(0.f)
             .setY(0.f)
-            .setWidth(swapChain.getSwapchainExtent().width)
-            .setHeight(swapChain.getSwapchainExtent().height)
+            .setWidth(swapChain.getExtent().width)
+            .setHeight(swapChain.getExtent().height)
             .setMinDepth(0.0f)
             .setMaxDepth(1.0f))
         .addScissor(vk::Rect2D{}
             .setOffset(vk::Offset2D{ 0, 0 })
-            .setExtent(swapChain.getSwapchainExtent()))
+            .setExtent(swapChain.getExtent()))
         .setRasterizerDepthClampEnable(false)
         .setRasterizerDiscardEnable(false)
         .setRasterizerPolygonMode(vk::PolygonMode::eFill)
@@ -129,7 +146,7 @@ int main(int argc, char **argv) {
             .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
             .setBlendEnable(vk::Bool32{ false }))
         .setColorBlendStateLogicOpEnable(false)
-        .setRenderPass(swapChain.getSwapChainRenderPass())
+        .setRenderPass(renderer.getRenderPass())
         .build(device);
 
     while (!window.shouldClose()) {
@@ -142,8 +159,9 @@ int main(int argc, char **argv) {
 
             program.bind(commandBuffer);
 
-            commandBuffer.getCommandBuffer().bindVertexBuffers(0, {buffer.getBuffer()}, {0});
-            commandBuffer.getCommandBuffer().draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+            commandBuffer.get().bindVertexBuffers(0, {vertexBuffer.get()}, {0});
+            commandBuffer.get().bindIndexBuffer(indexBuffer.get(), {0}, vk::IndexType::eUint32);
+            commandBuffer.get().drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
             renderer.endSwapChainRenderPass();
 
@@ -152,7 +170,7 @@ int main(int argc, char **argv) {
 
     }
 
-    device->getDevice().waitIdle();
+    device->get().waitIdle();
 
     return 0;
 }

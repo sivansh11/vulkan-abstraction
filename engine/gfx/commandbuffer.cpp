@@ -17,7 +17,7 @@ CommandPool::Builder& CommandPool::Builder::setQueueFamilyIndex(uint32_t queueFa
 
 CommandPool CommandPool::Builder::build(std::shared_ptr<Device> device) {
     vk::CommandPool commandPool;
-    if (device->getDevice().createCommandPool(&m_commandPoolCreateInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
+    if (device->get().createCommandPool(&m_commandPoolCreateInfo, nullptr, &commandPool) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create command pool!");
     }
 
@@ -30,7 +30,7 @@ CommandPool CommandPool::Builder::build(std::shared_ptr<Device> device) {
 CommandPool::CommandPool(std::shared_ptr<Device> device, vk::CommandPool commandPool) : m_device(device), m_commandPool(commandPool) {}
 
 CommandPool::~CommandPool() {
-    if (m_commandPool) m_device->getDevice().destroyCommandPool(m_commandPool);
+    if (m_commandPool) m_device->get().destroyCommandPool(m_commandPool);
     m_commandPool = VK_NULL_HANDLE;
 }
 
@@ -55,7 +55,7 @@ std::vector<CommandBuffer> CommandPool::createCommandBuffer(uint32_t commandBuff
     std::vector<vk::CommandBuffer> vkCommandBuffers;
     vkCommandBuffers.resize(commandBufferCount);
 
-    if (m_device->getDevice().allocateCommandBuffers(&commandBufferAllocateInfo, vkCommandBuffers.data()) != vk::Result::eSuccess) {
+    if (m_device->get().allocateCommandBuffers(&commandBufferAllocateInfo, vkCommandBuffers.data()) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create command buffer!");
     }
 

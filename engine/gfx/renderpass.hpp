@@ -45,7 +45,7 @@ public:
 
     RenderPass& operator=(RenderPass&& renderPass);
 
-    vk::RenderPass getRenderPass() const { return m_renderPass; }
+    vk::RenderPass get() const { return m_renderPass; }
 
     struct BeginInfo {
         BeginInfo& setFrameBuffer(const FrameBuffer& frameBuffer);

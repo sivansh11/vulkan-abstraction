@@ -14,12 +14,12 @@ FrameBuffer::Builder& FrameBuffer::Builder::setFlags(vk::FramebufferCreateFlags 
 }
 
 FrameBuffer::Builder& FrameBuffer::Builder::setRenderPass(const RenderPass& renderPass) {
-    m_frameBufferCreateInfo.setRenderPass(renderPass.getRenderPass());
+    m_frameBufferCreateInfo.setRenderPass(renderPass.get());
     return *this;
 }
 
 FrameBuffer::Builder& FrameBuffer::Builder::addAttachment(const ImageView& imageView) {
-    m_imageViews.push_back(imageView.getImageView());
+    m_imageViews.push_back(imageView.get());
     return *this;
 }
 
@@ -36,7 +36,7 @@ FrameBuffer FrameBuffer::Builder::build(std::shared_ptr<Device> device) {
     
     vk::Framebuffer frameBuffer;
 
-    if (device->getDevice().createFramebuffer(&m_frameBufferCreateInfo, nullptr, &frameBuffer) != vk::Result::eSuccess) {
+    if (device->get().createFramebuffer(&m_frameBufferCreateInfo, nullptr, &frameBuffer) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create frame buffer!");
     }
 
@@ -51,7 +51,7 @@ FrameBuffer::FrameBuffer(std::shared_ptr<Device> device, vk::Framebuffer frameBu
 }
 
 FrameBuffer::~FrameBuffer() {
-    if (m_frameBuffer) m_device->getDevice().destroyFramebuffer(m_frameBuffer);
+    if (m_frameBuffer) m_device->get().destroyFramebuffer(m_frameBuffer);
     m_frameBuffer = VK_NULL_HANDLE;
 }
 

@@ -26,10 +26,10 @@ Buffer::Builder& Buffer::Builder::setMemoryProperty(vk::MemoryPropertyFlags flag
 Buffer Buffer::Builder::build(std::shared_ptr<Device> device) {
     assert(m_memoryPropertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent && "buffer must be host coherent atm, temporary!");
     vk::Buffer buffer;
-    if (device->getDevice().createBuffer(&m_bufferCreateInfo, nullptr, &buffer) != vk::Result::eSuccess) {
+    if (device->get().createBuffer(&m_bufferCreateInfo, nullptr, &buffer) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create buffer!");
     }
-    vk::MemoryRequirements memoryRequirements = device->getDevice().getBufferMemoryRequirements(buffer);
+    vk::MemoryRequirements memoryRequirements = device->get().getBufferMemoryRequirements(buffer);
 
     vk::MemoryAllocateInfo memoryAllocateInfo = vk::MemoryAllocateInfo{}
         .setAllocationSize(memoryRequirements.size)
@@ -37,13 +37,13 @@ Buffer Buffer::Builder::build(std::shared_ptr<Device> device) {
 
     vk::DeviceMemory deviceMemory;
 
-    auto res = device->getDevice().allocateMemory(&memoryAllocateInfo, nullptr, &deviceMemory);
+    auto res = device->get().allocateMemory(&memoryAllocateInfo, nullptr, &deviceMemory);
 
     if (res != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to allocate device memory!");
     }
 
-    device->getDevice().bindBufferMemory(buffer, deviceMemory, 0);
+    device->get().bindBufferMemory(buffer, deviceMemory, 0);
 
     return {device, buffer, deviceMemory, m_bufferCreateInfo.size};
 }
@@ -55,8 +55,8 @@ Buffer::Buffer(std::shared_ptr<Device> device, vk::Buffer buffer, vk::DeviceMemo
 }
 
 Buffer::~Buffer() {
-    if (m_buffer) m_device->getDevice().destroyBuffer(m_buffer);
-    if (m_deviceMemory) m_device->getDevice().freeMemory(m_deviceMemory);
+    if (m_buffer) m_device->get().destroyBuffer(m_buffer);
+    if (m_deviceMemory) m_device->get().freeMemory(m_deviceMemory);
     m_buffer = VK_NULL_HANDLE;
     m_deviceMemory = VK_NULL_HANDLE;
 }
@@ -80,11 +80,11 @@ Buffer& Buffer::operator=(Buffer&& buffer) {
 
 void Buffer::map(vk::DeviceSize offset) {
     assert(offset < m_bufferSize);
-    m_mapped = m_device->getDevice().mapMemory(m_deviceMemory, offset, m_bufferSize, vk::MemoryMapFlagBits{});
+    m_mapped = m_device->get().mapMemory(m_deviceMemory, offset, m_bufferSize, vk::MemoryMapFlagBits{});
 }
 
 void Buffer::unmap() {
-    m_device->getDevice().unmapMemory(m_deviceMemory);
+    m_device->get().unmapMemory(m_deviceMemory);
     m_mapped = nullptr;
 }
 

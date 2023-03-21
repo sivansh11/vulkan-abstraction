@@ -5,7 +5,7 @@ namespace gfx {
 // **********Semaphore::Builder**********
 Semaphore Semaphore::Builder::build(std::shared_ptr<Device> device) {
     vk::Semaphore semaphore;
-    if (device->getDevice().createSemaphore(&m_semaphoreCreateInfo, nullptr, &semaphore) != vk::Result::eSuccess) {
+    if (device->get().createSemaphore(&m_semaphoreCreateInfo, nullptr, &semaphore) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create semaphore!");
     }
 
@@ -20,7 +20,7 @@ Semaphore::Semaphore(std::shared_ptr<Device> device, vk::Semaphore semaphore) : 
 }
 
 Semaphore::~Semaphore() {
-    if (m_semaphore) m_device->getDevice().destroySemaphore(m_semaphore);
+    if (m_semaphore) m_device->get().destroySemaphore(m_semaphore);
 }
 
 Semaphore::Semaphore(Semaphore&& semaphore) : m_device(semaphore.m_device), m_semaphore(semaphore.m_semaphore) {
@@ -46,7 +46,7 @@ Fence::Builder& Fence::Builder::setFlags(vk::FenceCreateFlags flags) {
 
 Fence Fence::Builder::build(std::shared_ptr<Device> device) {
     vk::Fence fence;
-    if (device->getDevice().createFence(&m_fenceCreateInfo, nullptr, &fence) != vk::Result::eSuccess) {
+    if (device->get().createFence(&m_fenceCreateInfo, nullptr, &fence) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create fence!");
     }
 
@@ -61,7 +61,7 @@ Fence::Fence(std::shared_ptr<Device> device, vk::Fence fence) : m_device(device)
 }
 
 Fence::~Fence() {
-    if (m_fence) m_device->getDevice().destroyFence(m_fence);
+    if (m_fence) m_device->get().destroyFence(m_fence);
 }
 
 Fence::Fence(Fence&& fence) : m_device(fence.m_device), m_fence(fence.m_fence) {
@@ -78,13 +78,13 @@ Fence& Fence::operator=(Fence&& fence) {
 }
 
 void Fence::wait(uint64_t timeout) {
-    if (m_device->getDevice().waitForFences(1, &m_fence, true, timeout) != vk::Result::eSuccess) {
+    if (m_device->get().waitForFences(1, &m_fence, true, timeout) != vk::Result::eSuccess) {
         throw std::runtime_error("Wait for fence timed out!");
     }
 }
 
 void Fence::reset() {
-    if (m_device->getDevice().resetFences(1, &m_fence) != vk::Result::eSuccess) {
+    if (m_device->get().resetFences(1, &m_fence) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to reset fence!");
     }
 }

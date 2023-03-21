@@ -67,7 +67,7 @@ RenderPass RenderPass::Builder::build(std::shared_ptr<Device> device) {
                           .setSubpassCount(1);
     
     vk::RenderPass renderPass;
-    if (device->getDevice().createRenderPass(&m_renderPassCreateInfo, nullptr, &renderPass) != vk::Result::eSuccess) {
+    if (device->get().createRenderPass(&m_renderPassCreateInfo, nullptr, &renderPass) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create render pass!");
     }
 
@@ -80,7 +80,7 @@ RenderPass RenderPass::Builder::build(std::shared_ptr<Device> device) {
 RenderPass::RenderPass(std::shared_ptr<Device> device, vk::RenderPass renderPass) : m_device(device), m_renderPass(renderPass) {}
 
 RenderPass::~RenderPass() {
-    if (m_renderPass) m_device->getDevice().destroyRenderPass(m_renderPass);
+    if (m_renderPass) m_device->get().destroyRenderPass(m_renderPass);
     m_renderPass = VK_NULL_HANDLE;
 }
 
@@ -97,7 +97,7 @@ RenderPass& RenderPass::operator=(RenderPass&& renderPass) {
 }
 
 RenderPass::BeginInfo& RenderPass::BeginInfo::setFrameBuffer(const FrameBuffer& frameBuffer) {
-    m_frameBuffer = frameBuffer.getFrameBuffer();
+    m_frameBuffer = frameBuffer.get();
     return *this;
 }
 
@@ -119,11 +119,11 @@ void RenderPass::begin(const CommandBuffer& commandBuffer, const BeginInfo& begi
         .setClearValueCount(beginInfo.m_clearValues.size())
         .setPClearValues(beginInfo.m_clearValues.data());
     
-    commandBuffer.getCommandBuffer().beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
+    commandBuffer.get().beginRenderPass(&renderPassBeginInfo, vk::SubpassContents::eInline);
 }
 
 void RenderPass::end(const CommandBuffer& commandBuffer) {
-    commandBuffer.getCommandBuffer().endRenderPass();
+    commandBuffer.get().endRenderPass();
 }
 
 } // namespace gfx

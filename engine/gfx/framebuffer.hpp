@@ -33,7 +33,7 @@ public:
 
     FrameBuffer(const FrameBuffer&) = delete;
 
-    vk::Framebuffer getFrameBuffer() const { return m_frameBuffer; }
+    vk::Framebuffer get() const { return m_frameBuffer; }
 
 private:
     FrameBuffer(std::shared_ptr<Device> device, vk::Framebuffer frameBuffer);

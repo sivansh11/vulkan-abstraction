@@ -34,7 +34,7 @@ public:
 
     Semaphore& operator=(Semaphore&& semaphore);
 
-    vk::Semaphore getSemaphore() const { return m_semaphore; }
+    vk::Semaphore get() const { return m_semaphore; }
 
 private:
     Semaphore(std::shared_ptr<Device> device, vk::Semaphore semaphore);
@@ -78,7 +78,7 @@ public:
     void wait(uint64_t timeout = UINT64_MAX);
     void reset();
 
-    vk::Fence getFence() const { return m_fence; }
+    vk::Fence get() const { return m_fence; }
 
 private:
     Fence(std::shared_ptr<Device> device, vk::Fence fence);

@@ -301,17 +301,17 @@ uint32_t Device::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags mem
 Device::QueueSubmitInfo::QueueSubmitInfo() {}
 
 Device::QueueSubmitInfo& Device::QueueSubmitInfo::addWaitSemaphore(const Semaphore& semaphore) {
-    m_waitSemaphores.push_back(semaphore.getSemaphore());
+    m_waitSemaphores.push_back(semaphore.get());
     return *this;
 }
 
 Device::QueueSubmitInfo& Device::QueueSubmitInfo::addSignalSemaphore(const Semaphore& semaphore) {
-    m_signalSemaphores.push_back(semaphore.getSemaphore());
+    m_signalSemaphores.push_back(semaphore.get());
     return *this;
 }
 
 Device::QueueSubmitInfo& Device::QueueSubmitInfo::addCommandBuffer(const CommandBuffer& commandBuffer) {
-    m_commandBuffers.push_back(commandBuffer.getCommandBuffer());
+    m_commandBuffers.push_back(commandBuffer.get());
     return *this;
 }
 
@@ -321,7 +321,7 @@ Device::QueueSubmitInfo& Device::QueueSubmitInfo::addWaitStage(vk::PipelineStage
 }
 
 Device::QueueSubmitInfo& Device::QueueSubmitInfo::setFence(const Fence& fence) {
-    m_fence = fence.getFence();
+    m_fence = fence.get();
     return *this;
 }
 
@@ -348,12 +348,12 @@ Device::PresentInfo& Device::PresentInfo::setImageIndex(uint32_t imageIndex) {
 }
 
 Device::PresentInfo& Device::PresentInfo::addWaitSemaphore(const Semaphore& semaphore) {
-    m_waitSemaphores.push_back(semaphore.getSemaphore());
+    m_waitSemaphores.push_back(semaphore.get());
     return *this;
 } 
 
 Device::PresentInfo& Device::PresentInfo::setSwapChain(const SwapChain& swapChain) {
-    m_swapChain = swapChain.getSwapChain();
+    m_swapChain = swapChain.get();
     return *this;
 }
 

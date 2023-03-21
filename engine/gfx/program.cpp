@@ -197,7 +197,7 @@ GraphicsProgram::Builder& GraphicsProgram::Builder::addVertexInputAttributeDescr
 }
 
 GraphicsProgram::Builder& GraphicsProgram::Builder::setRenderPass(const RenderPass& renderPass) {
-    m_renderPass = renderPass.getRenderPass();
+    m_renderPass = renderPass.get();
     return *this;
 }
 
@@ -209,7 +209,7 @@ GraphicsProgram GraphicsProgram::Builder::build(std::shared_ptr<Device> device) 
                             .setPSetLayouts(m_descriptorSetLayout.data());
 
     vk::PipelineLayout pipelineLayout;
-    if (device->getDevice().createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != vk::Result::eSuccess) {
+    if (device->get().createPipelineLayout(&pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create pipeline layout!");
     }
 
@@ -272,7 +272,7 @@ GraphicsProgram GraphicsProgram::Builder::build(std::shared_ptr<Device> device) 
 
         vk::ShaderModule shaderModule;
 
-        if (device->getDevice().createShaderModule(&shaderModuleCreateInfo, nullptr, &shaderModule) != vk::Result::eSuccess) {
+        if (device->get().createShaderModule(&shaderModuleCreateInfo, nullptr, &shaderModule) != vk::Result::eSuccess) {
             throw std::runtime_error("Failed to create shader module!");
         }
         shaderModules.push_back(shaderModule);
@@ -327,7 +327,7 @@ GraphicsProgram GraphicsProgram::Builder::build(std::shared_ptr<Device> device) 
 
     vk::Pipeline graphicsPipline;
 
-    auto graphicsPipelineResult = device->getDevice().createGraphicsPipeline(VK_NULL_HANDLE, graphicsPipelineCreateInfo);
+    auto graphicsPipelineResult = device->get().createGraphicsPipeline(VK_NULL_HANDLE, graphicsPipelineCreateInfo);
 
     if (graphicsPipelineResult.result != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create graphics pipeline!");
@@ -347,14 +347,14 @@ GraphicsProgram::GraphicsProgram(std::shared_ptr<Device> device, const vk::Pipel
 
 GraphicsProgram::~GraphicsProgram() {
     for (auto& shaderModule : m_shaderModules) {
-        m_device->getDevice().destroyShaderModule(shaderModule);
+        m_device->get().destroyShaderModule(shaderModule);
     }
-    m_device->getDevice().destroyPipelineLayout(m_pipelineLayout);
-    m_device->getDevice().destroyPipeline(m_pipeline);
+    m_device->get().destroyPipelineLayout(m_pipelineLayout);
+    m_device->get().destroyPipeline(m_pipeline);
 }
 
 void GraphicsProgram::bind(const CommandBuffer& commandBuffer) {
-    commandBuffer.getCommandBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline);
+    commandBuffer.get().bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline);
 }
 
 } // namespace gfx

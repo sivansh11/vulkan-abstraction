@@ -47,7 +47,7 @@ public:
     ImageView(ImageView&& imageView);
     ImageView(const ImageView&) = delete;
 
-    vk::ImageView getImageView() const { return m_imageView; }
+    vk::ImageView get() const { return m_imageView; }
 
 private:
     ImageView(std::shared_ptr<Device> device, vk::ImageView imageView);
@@ -101,8 +101,10 @@ public:
     Image(const Image&) = delete;
 
     vk::Format getFormat() const { return m_format; }
-    const vk::Image getImage() const { return m_image; }
+    const vk::Image get() const { return m_image; }
     // ImageView createImageView() const;
+
+    Image(std::shared_ptr<Device> device, vk::Image image, vk::Format format);
 
 private:
     Image(std::shared_ptr<Device> device, vk::Image image, vk::DeviceMemory imageDeviceMemory, vk::Format format);

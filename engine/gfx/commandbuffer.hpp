@@ -19,7 +19,7 @@ public:
     CommandBuffer(CommandBuffer&& commandPool);
     CommandBuffer(const CommandBuffer&) = default;
 
-    vk::CommandBuffer getCommandBuffer() const { return m_commandBuffer; }
+    vk::CommandBuffer get() const { return m_commandBuffer; }
 
 private:
     vk::CommandBuffer m_commandBuffer;
@@ -46,6 +46,8 @@ public:
     CommandPool& operator=(CommandPool&& commandPool);
 
     std::vector<CommandBuffer> createCommandBuffer(uint32_t commandBufferCount);
+
+    vk::CommandPool get() const { return m_commandPool; }
 
 private:
     CommandPool(std::shared_ptr<Device> device, vk::CommandPool commandPool);

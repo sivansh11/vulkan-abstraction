@@ -44,7 +44,7 @@ public:
     SwapChainSupportDetails getSwapChainSupportDetails() const { return querySwapChainSupport(m_physicalDevice); }
     QueueFamilyIndices getQueueFamilyIndices() const { return findQueueFamilies(m_physicalDevice); }
     const vk::SurfaceKHR& getSurface() const { return m_surface; }
-    const vk::Device& getDevice() const { return m_device; }
+    const vk::Device& get() const { return m_device; }
     uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags memoryPropertyFlags) const;
 
 

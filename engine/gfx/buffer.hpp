@@ -27,7 +27,7 @@ public:
     Buffer(Buffer&& buffer);
     Buffer& operator=(Buffer&& buffer);
 
-    vk::Buffer getBuffer() const { return m_buffer; }
+    vk::Buffer get() const { return m_buffer; }
 
     // TODO: add copying of buffer
     // Buffer(const Buffer&);

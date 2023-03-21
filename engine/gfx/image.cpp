@@ -63,11 +63,11 @@ Image Image::Builder::build(std::shared_ptr<Device> device) {
 
     vk::Image image;
 
-    if (device->getDevice().createImage(&m_imageCreateInfo, nullptr, &image) != vk::Result::eSuccess) {
+    if (device->get().createImage(&m_imageCreateInfo, nullptr, &image) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create Image!");
     }
 
-    vk::MemoryRequirements memoryRequirements = device->getDevice().getImageMemoryRequirements(image);
+    vk::MemoryRequirements memoryRequirements = device->get().getImageMemoryRequirements(image);
     
     vk::MemoryAllocateInfo memoryAllocateInfo = vk::MemoryAllocateInfo{} 
         .setAllocationSize(memoryRequirements.size)
@@ -75,11 +75,11 @@ Image Image::Builder::build(std::shared_ptr<Device> device) {
 
     vk::DeviceMemory deviceMemory;
 
-    if (device->getDevice().allocateMemory(&memoryAllocateInfo, nullptr, &deviceMemory) != vk::Result::eSuccess) {
+    if (device->get().allocateMemory(&memoryAllocateInfo, nullptr, &deviceMemory) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to allocate device memory!");
     }
 
-    device->getDevice().bindImageMemory(image, deviceMemory, 0);
+    device->get().bindImageMemory(image, deviceMemory, 0);
 
     INFO("Created Image!");
 
@@ -91,9 +91,13 @@ Image::Image(std::shared_ptr<Device> device, vk::Image image, vk::DeviceMemory i
 
 }
 
+Image::Image(std::shared_ptr<Device> device, vk::Image image, vk::Format format) : m_device(device), m_image(image), m_format(format), m_imageDeviceMemory(VK_NULL_HANDLE) {
+
+}
+
 Image::~Image() {
-    if (m_image) m_device->getDevice().destroyImage(m_image);
-    if (m_imageDeviceMemory) m_device->getDevice().freeMemory(m_imageDeviceMemory);
+    if (m_image) m_device->get().destroyImage(m_image);
+    if (m_imageDeviceMemory) m_device->get().freeMemory(m_imageDeviceMemory);
     m_image = VK_NULL_HANDLE;
     m_imageDeviceMemory = VK_NULL_HANDLE;
 }
@@ -112,7 +116,7 @@ ImageView::Builder& ImageView::Builder::setFlags(vk::ImageViewCreateFlags flags)
 }
 
 ImageView::Builder& ImageView::Builder::setImage(const Image& image) {
-    m_imageViewCreateInfo.setImage(image.getImage());
+    m_imageViewCreateInfo.setImage(image.get());
     return *this;
 }
 
@@ -169,7 +173,7 @@ ImageView ImageView::Builder::build(std::shared_ptr<Device> device) {
 
     vk::ImageView imageView;
 
-    if (device->getDevice().createImageView(&m_imageViewCreateInfo, nullptr, &imageView) != vk::Result::eSuccess) {
+    if (device->get().createImageView(&m_imageViewCreateInfo, nullptr, &imageView) != vk::Result::eSuccess) {
         throw std::runtime_error("Failed to create image view!");
     }
 
@@ -185,7 +189,7 @@ ImageView::ImageView(std::shared_ptr<Device> device, vk::ImageView imageView) : 
 }
 
 ImageView::~ImageView() {
-    if (m_imageView) m_device->getDevice().destroyImageView(m_imageView);
+    if (m_imageView) m_device->get().destroyImageView(m_imageView);
     m_imageView = VK_NULL_HANDLE;
 }
 

@@ -4,7 +4,7 @@
 
 namespace gfx {
 
-SwapChain::SwapChain(std::shared_ptr<Device> device, uint32_t maxFramesInFlight) : m_device(device), m_deviceRef(m_device->getDevice()), MAX_FRAMES_IN_FLIGHT(maxFramesInFlight) {
+SwapChain::SwapChain(std::shared_ptr<Device> device, uint32_t maxFramesInFlight) : m_device(device), m_deviceRef(m_device->get()), MAX_FRAMES_IN_FLIGHT(maxFramesInFlight) {
     init();
 }
 
@@ -14,7 +14,6 @@ SwapChain::~SwapChain() {
 
 void SwapChain::cleanup() {
     m_deviceRef.destroySwapchainKHR(m_swapChain);
-    m_swapChainFrameBuffer.clear();
     m_swapChainImageViews.clear();
 }
 
@@ -51,19 +50,15 @@ vk::Extent2D SwapChain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capab
 }   
 
 void SwapChain::recreateSwapChain() {
-    m_device->getDevice().waitIdle();
+    m_device->get().waitIdle();
     cleanup();
     createSwapChain();
-    createImageViews();
-    createFrameBuffer();
+    getSwapChainImages();
 }
 
 void SwapChain::init() {
     createSwapChain();
-    createImageViews();
-    createRenderPass();
-    createFrameBuffer();
-    createSyncObjects();
+    getSwapChainImages();
 }
 
 void SwapChain::createSwapChain() {
@@ -107,90 +102,29 @@ void SwapChain::createSwapChain() {
         throw std::runtime_error("Vulkan: Failed to create SwapChain!");
     }
 
-    m_swapChainImages = m_deviceRef.getSwapchainImagesKHR(m_swapChain);
     m_swapChainImageFormat = m_surfaceFormat.format;
     m_swapChainExtent = m_extent;
 
     INFO("Created SwapChain!");
 }
 
-void SwapChain::createImageViews() {
-    m_swapChainImageViews.reserve(m_swapChainImages.size());
-
-    for (size_t i = 0; i < m_swapChainImages.size(); i++) {
-        m_swapChainImageViews.emplace_back(gfx::ImageView::Builder{}
-            .setImage(m_swapChainImages[i])
-            .setFormat(m_swapChainImageFormat)
-            .setViewType(vk::ImageViewType::e2D)
-            .setComponents(vk::ComponentMapping{}
-                .setR(vk::ComponentSwizzle::eIdentity)
-                .setG(vk::ComponentSwizzle::eIdentity)
-                .setB(vk::ComponentSwizzle::eIdentity)
-                .setA(vk::ComponentSwizzle::eIdentity))
-            .setSubresourceRangeAspectMask(vk::ImageAspectFlagBits::eColor)
-            .setSubresourceRangeBaseMipLevel(0)
-            .setSubresourceRangeLevelCount(1)
-            .setSubresourceRangeBaseArrayLayer(0)
-            .setSubresourceRangeLayerCount(1)
-            .build(m_device));
+void SwapChain::getSwapChainImages() {
+    auto images = m_deviceRef.getSwapchainImagesKHR(m_swapChain);
+    m_swapChainImages.reserve(images.size());
+    for (auto image : images) {
+        m_swapChainImages.emplace_back(m_device, image, m_swapChainImageFormat);
     }
 }
 
-void SwapChain::createRenderPass() {
-    m_renderPass = RenderPass::Builder{}
-            .addAttachmentDescription(vk::AttachmentDescription{}
-                .setFormat(getSwapchainImageFormat())
-                .setSamples(vk::SampleCountFlagBits::e1)
-                .setLoadOp(vk::AttachmentLoadOp::eClear)
-                .setStoreOp(vk::AttachmentStoreOp::eStore)
-                .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-                .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-                .setInitialLayout(vk::ImageLayout::eUndefined)
-                .setFinalLayout(vk::ImageLayout::ePresentSrcKHR))
-            .addColorAttachmentRefrence(vk::AttachmentReference{}
-                .setAttachment(0)
-                .setLayout(vk::ImageLayout::eColorAttachmentOptimal))
-            .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-            .build(m_device);
-}
-
-void SwapChain::createFrameBuffer() {
-    m_swapChainFrameBuffer.reserve(m_swapChainImageViews.size());
-    for (auto& imageView : m_swapChainImageViews) {
-        m_swapChainFrameBuffer.emplace_back(gfx::FrameBuffer::Builder{}
-            .addAttachment(imageView)
-            .setDimensions({m_swapChainExtent.width, m_swapChainExtent.height, 1})
-            .setRenderPass(m_renderPass)
-            .build(m_device));
-    }
-}
-
-void SwapChain::createSyncObjects() {
-    m_imageAvailableSemaphore.reserve(MAX_FRAMES_IN_FLIGHT);
-    m_renderFinishedSemaphore.reserve(MAX_FRAMES_IN_FLIGHT);
-    m_inFlightFence.reserve(MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        m_imageAvailableSemaphore.emplace_back(gfx::Semaphore::Builder{}.build(m_device));
-        m_renderFinishedSemaphore.emplace_back(gfx::Semaphore::Builder{}.build(m_device));
-        m_inFlightFence.emplace_back(gfx::Fence::Builder{}
-            .setFlags(vk::FenceCreateFlagBits::eSignaled)
-            .build(m_device));
-    }
-}
-
-std::optional<uint32_t> SwapChain::acquireNextImage(uint64_t timeout) {
-    m_inFlightFence[m_currentFrame].wait(timeout);
+std::optional<uint32_t> SwapChain::acquireNextImage(const Semaphore& imageAvailableSemaphore, const Fence& fence, uint64_t timeout) {
     uint32_t imageIndex;
-    auto res = m_device->getDevice().acquireNextImageKHR(m_swapChain, timeout, m_imageAvailableSemaphore[m_currentFrame].getSemaphore(), VK_NULL_HANDLE, &imageIndex);
+    auto res = m_device->get().acquireNextImageKHR(m_swapChain, timeout, imageAvailableSemaphore.get(), fence.get(), &imageIndex);
     if (res == vk::Result::eErrorOutOfDateKHR) {
-        recreateSwapChain();
         return std::nullopt;
     }
     else if (res != vk::Result::eSuccess && res != vk::Result::eSuboptimalKHR) {
         throw std::runtime_error("Failed to acquire next image!");
     }
-
-    m_inFlightFence[m_currentFrame].reset();
 
     return {imageIndex};
 }
