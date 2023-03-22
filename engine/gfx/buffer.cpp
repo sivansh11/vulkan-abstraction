@@ -62,16 +62,21 @@ Buffer::~Buffer() {
 }
 
 Buffer::Buffer(Buffer&& buffer) 
-  : m_device(buffer.m_device), m_buffer(buffer.m_buffer), m_deviceMemory(buffer.m_deviceMemory) {
+  : m_device(buffer.m_device), m_buffer(buffer.m_buffer), m_deviceMemory(buffer.m_deviceMemory), m_bufferSize(buffer.m_bufferSize) {
+    if (isMapped()) 
+        unmap();
     buffer.m_device = nullptr;
     buffer.m_buffer = VK_NULL_HANDLE;
     buffer.m_deviceMemory = VK_NULL_HANDLE;
 }
 
 Buffer& Buffer::operator=(Buffer&& buffer) {
+    if (isMapped()) 
+        unmap();
     m_device = buffer.m_device;
     m_buffer = buffer.m_buffer;
     m_deviceMemory = buffer.m_deviceMemory;
+    m_bufferSize = buffer.m_bufferSize;
     buffer.m_device = nullptr;
     buffer.m_buffer = VK_NULL_HANDLE;
     buffer.m_deviceMemory = VK_NULL_HANDLE;

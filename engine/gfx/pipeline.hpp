@@ -11,7 +11,7 @@
 
 namespace gfx {
 
-class GraphicsProgram {
+class GraphicsPipeline {
 public:
     struct Builder {
         Builder();
@@ -60,8 +60,8 @@ public:
         Builder& setColorBlendStateBlendConstantA(float factor);
 
         // pipeline layout create info
-        Builder& addLayoutPushConstantRange(const vk::PushConstantRange& pushConstantRange);
-        Builder& addLayoutDescriptorSet(const vk::DescriptorSetLayout& descriptorSetLayout);
+        Builder& addPushConstantRangeLayout(const vk::PushConstantRange& pushConstantRange);
+        Builder& addDescriptorSetLayout(const vk::DescriptorSetLayout& descriptorSetLayout);
 
         // TODO: add setVertexInput 
         Builder& addVertexInputBindingDescription(const vk::VertexInputBindingDescription& vertexInputBindingDescription);
@@ -71,7 +71,7 @@ public:
         Builder& setRenderPass(const RenderPass& renderPass);
 
 
-        GraphicsProgram build(std::shared_ptr<Device> device);
+        GraphicsPipeline build(std::shared_ptr<Device> device);
         // GraphicsProgram buildComputeProgram(const Context *device);
 
         // TODO: add depth stencil state
@@ -96,17 +96,19 @@ public:
         vk::RenderPass m_renderPass;
     };
 
-    GraphicsProgram() : m_device(nullptr), m_pipeline(VK_NULL_HANDLE), m_pipelineLayout(VK_NULL_HANDLE), m_shaderModules{} {}
+    GraphicsPipeline() : m_device(nullptr), m_pipeline(VK_NULL_HANDLE), m_pipelineLayout(VK_NULL_HANDLE), m_shaderModules{} {}
 
-    ~GraphicsProgram();
+    ~GraphicsPipeline();
 
     // TODO: add direct shader string compilation
     // void addShader(const std::string& shaderName, const std::string& shaderSource);
 
     void bind(const CommandBuffer& commandBuffer);
 
+    vk::PipelineLayout getPipelineLayout() const { return m_pipelineLayout; }
+
 private:
-    GraphicsProgram(std::shared_ptr<Device> device, const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, const std::vector<vk::ShaderModule>& shaderModules);
+    GraphicsPipeline(std::shared_ptr<Device> device, const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, const std::vector<vk::ShaderModule>& shaderModules);
 
 private:
     std::shared_ptr<Device> m_device;

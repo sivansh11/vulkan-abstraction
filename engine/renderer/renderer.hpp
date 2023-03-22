@@ -30,6 +30,8 @@ public:
 
     const gfx::RenderPass& getRenderPass() const { return m_renderPass; }
 
+    uint32_t getCurrentFrameIndex() { return m_currentFrame; }
+
 private:
     Renderer(std::shared_ptr<gfx::Device> device, gfx::SwapChain& swapChain);
 

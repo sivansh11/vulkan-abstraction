@@ -1,4 +1,4 @@
-#include "program.hpp"
+#include "pipeline.hpp"
 
 #include "../core/log.hpp"
 
@@ -24,184 +24,183 @@ static std::string readFile(const std::filesystem::path& path) {
 
 } // namespace utils
 
+// **********************GraphicsPipeline::Builder*****************************
+GraphicsPipeline::Builder::Builder() {}
 
-// **********************GraphicsProgram::Builder*****************************
-GraphicsProgram::Builder::Builder() {}
-
-GraphicsProgram::Builder& GraphicsProgram::Builder::addShaderFromPath(const std::filesystem::path& shaderPath) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addShaderFromPath(const std::filesystem::path& shaderPath) {
     m_shaderPaths.emplace(shaderPath);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::addDynamicState(vk::DynamicState dynamicState) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addDynamicState(vk::DynamicState dynamicState) {
     m_dynamicStates.push_back(dynamicState);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setInputAssemblyTopology(vk::PrimitiveTopology topology) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setInputAssemblyTopology(vk::PrimitiveTopology topology) {
     m_pipelineInputAssemblyStateCreateInfo.setTopology(topology);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setInputAssemblyPrimitiveRestartEnable(bool enable) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setInputAssemblyPrimitiveRestartEnable(bool enable) {
     m_pipelineInputAssemblyStateCreateInfo.setPrimitiveRestartEnable(enable);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::addViewport(const vk::Viewport& viewPort) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addViewport(const vk::Viewport& viewPort) {
     m_viewports.push_back(viewPort);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::addScissor(const vk::Rect2D& scissor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addScissor(const vk::Rect2D& scissor) {
     m_scissors.push_back(scissor);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerDepthClampEnable(bool enable) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerDepthClampEnable(bool enable) {
     m_pipelineRasterizationStateCreateInfo.setDepthClampEnable(vk::Bool32{ enable });
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerDiscardEnable(bool enable) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerDiscardEnable(bool enable) {
     m_pipelineRasterizationStateCreateInfo.setRasterizerDiscardEnable(vk::Bool32{ enable });
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerPolygonMode(vk::PolygonMode polygonMode) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerPolygonMode(vk::PolygonMode polygonMode) {
     m_pipelineRasterizationStateCreateInfo.setPolygonMode(polygonMode);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerLineWidth(float lineWidth) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerLineWidth(float lineWidth) {
     m_pipelineRasterizationStateCreateInfo.setLineWidth(lineWidth);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerCullMode(vk::CullModeFlagBits cullMode) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerCullMode(vk::CullModeFlagBits cullMode) {
     m_pipelineRasterizationStateCreateInfo.setCullMode(cullMode);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerFrontFace(vk::FrontFace frontFace) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerFrontFace(vk::FrontFace frontFace) {
     m_pipelineRasterizationStateCreateInfo.setFrontFace(frontFace);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerDepthBiasEnable(bool enable) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerDepthBiasEnable(bool enable) {
     m_pipelineRasterizationStateCreateInfo.setDepthBiasEnable(vk::Bool32{ enable });
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerDepthBiasConstantFactor(float factor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerDepthBiasConstantFactor(float factor) {
     assert(m_pipelineRasterizationStateCreateInfo.depthBiasEnable && "Call setRasterizerDepthBiasEnable with true");
     m_pipelineRasterizationStateCreateInfo.setDepthBiasConstantFactor(factor);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerDepthBiasClamp(float factor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerDepthBiasClamp(float factor) {
     assert(m_pipelineRasterizationStateCreateInfo.depthBiasEnable && "Call setRasterizerDepthBiasEnable with true");
     m_pipelineRasterizationStateCreateInfo.setDepthBiasClamp(factor);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRasterizerDepthBiasSlopeFactor(float factor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRasterizerDepthBiasSlopeFactor(float factor) {
     assert(m_pipelineRasterizationStateCreateInfo.depthBiasEnable && "Call setRasterizerDepthBiasEnable with true");
     m_pipelineRasterizationStateCreateInfo.setDepthBiasSlopeFactor(factor);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplingSampleShadingEnable(bool enable) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setMultisamplingSampleShadingEnable(bool enable) {
     m_pipelineMultisampleStateCreateInfo.setSampleShadingEnable(vk::Bool32{ enable });
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplinRasterizationSamples(vk::SampleCountFlagBits sampleCount) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setMultisamplinRasterizationSamples(vk::SampleCountFlagBits sampleCount) {
     m_pipelineMultisampleStateCreateInfo.setRasterizationSamples(sampleCount);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplinMinSampleShading(float factor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setMultisamplinMinSampleShading(float factor) {
     m_pipelineMultisampleStateCreateInfo.setMinSampleShading(factor);
     return *this;
 }
 
-// GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplingSampleMask(vk::SampleMask sampleMask) {
+// GraphicsPipeline::Builder& GraphicsPipeline::Builder::setMultisamplingSampleMask(vk::SampleMask sampleMask) {
 //     m_sampleMask = sampleMask;
 //     return *this;
 // }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplingAlphaToCoverageEnable(bool enable) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setMultisamplingAlphaToCoverageEnable(bool enable) {
     m_pipelineMultisampleStateCreateInfo.setAlphaToCoverageEnable(vk::Bool32{ enable });
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setMultisamplingAlphaToOneEnable(bool enable) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setMultisamplingAlphaToOneEnable(bool enable) {
     m_pipelineMultisampleStateCreateInfo.setAlphaToOneEnable(vk::Bool32{ enable });
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::addColorBlendAttachmentState(const vk::PipelineColorBlendAttachmentState& pipelineColorBlendAttachmentState) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addColorBlendAttachmentState(const vk::PipelineColorBlendAttachmentState& pipelineColorBlendAttachmentState) {
     m_pipelineColorBlendAttachmentStates.push_back(pipelineColorBlendAttachmentState);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setColorBlendStateLogicOpEnable(bool enable) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setColorBlendStateLogicOpEnable(bool enable) {
     m_pipelineColorBlendStateCreateInfo.setLogicOpEnable(vk::Bool32{ enable });
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setColorBlendStateLogicOp(vk::LogicOp logicOp) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setColorBlendStateLogicOp(vk::LogicOp logicOp) {
     m_pipelineColorBlendStateCreateInfo.setLogicOp(logicOp);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setColorBlendStateBlendConstantR(float factor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setColorBlendStateBlendConstantR(float factor) {
     m_pipelineColorBlendStateCreateInfo.blendConstants[0] = factor;
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setColorBlendStateBlendConstantG(float factor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setColorBlendStateBlendConstantG(float factor) {
     m_pipelineColorBlendStateCreateInfo.blendConstants[1] = factor;
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setColorBlendStateBlendConstantB(float factor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setColorBlendStateBlendConstantB(float factor) {
     m_pipelineColorBlendStateCreateInfo.blendConstants[2] = factor;
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setColorBlendStateBlendConstantA(float factor) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setColorBlendStateBlendConstantA(float factor) {
     m_pipelineColorBlendStateCreateInfo.blendConstants[3] = factor;
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::addLayoutPushConstantRange(const vk::PushConstantRange& pushConstantRange) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addPushConstantRangeLayout(const vk::PushConstantRange& pushConstantRange) {
     m_pushConstantRanges.push_back(pushConstantRange);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::addLayoutDescriptorSet(const vk::DescriptorSetLayout& descriptorSetLayout) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addDescriptorSetLayout(const vk::DescriptorSetLayout& descriptorSetLayout) {
     m_descriptorSetLayout.push_back(descriptorSetLayout);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::addVertexInputBindingDescription(const vk::VertexInputBindingDescription& vertexInputBindingDescription) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addVertexInputBindingDescription(const vk::VertexInputBindingDescription& vertexInputBindingDescription) {
     m_vertexInputBindingDescriptions.push_back(vertexInputBindingDescription);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::addVertexInputAttributeDescription(const vk::VertexInputAttributeDescription& vertexInputAttributeDescription) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addVertexInputAttributeDescription(const vk::VertexInputAttributeDescription& vertexInputAttributeDescription) {
     m_vertexInputAttributeDescriptions.push_back(vertexInputAttributeDescription);
     return *this;
 }
 
-GraphicsProgram::Builder& GraphicsProgram::Builder::setRenderPass(const RenderPass& renderPass) {
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::setRenderPass(const RenderPass& renderPass) {
     m_renderPass = renderPass.get();
     return *this;
 }
 
-GraphicsProgram GraphicsProgram::Builder::build(std::shared_ptr<Device> device) {
+GraphicsPipeline GraphicsPipeline::Builder::build(std::shared_ptr<Device> device) {
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     pipelineLayoutCreateInfo.setPushConstantRangeCount(m_pushConstantRanges.size())
                             .setPPushConstantRanges(m_pushConstantRanges.data())
@@ -341,11 +340,11 @@ GraphicsProgram GraphicsProgram::Builder::build(std::shared_ptr<Device> device) 
 }
 
 // **********************GRAPHICSPROGRAM*********************
-GraphicsProgram::GraphicsProgram(std::shared_ptr<Device> device, const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, const std::vector<vk::ShaderModule>& shaderModules) : m_device(device), m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_shaderModules(shaderModules) {
+GraphicsPipeline::GraphicsPipeline(std::shared_ptr<Device> device, const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, const std::vector<vk::ShaderModule>& shaderModules) : m_device(device), m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_shaderModules(shaderModules) {
 
 }
 
-GraphicsProgram::~GraphicsProgram() {
+GraphicsPipeline::~GraphicsPipeline() {
     for (auto& shaderModule : m_shaderModules) {
         m_device->get().destroyShaderModule(shaderModule);
     }
@@ -353,7 +352,7 @@ GraphicsProgram::~GraphicsProgram() {
     m_device->get().destroyPipeline(m_pipeline);
 }
 
-void GraphicsProgram::bind(const CommandBuffer& commandBuffer) {
+void GraphicsPipeline::bind(const CommandBuffer& commandBuffer) {
     commandBuffer.get().bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline);
 }
 

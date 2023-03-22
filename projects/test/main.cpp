@@ -3,7 +3,7 @@
 #include "core/log.hpp"
 #include "gfx/device.hpp"
 #include "gfx/swapchain.hpp"
-#include "gfx/program.hpp"
+#include "gfx/pipeline.hpp"
 #include "gfx/commandbuffer.hpp"
 #include "renderer/renderer.hpp"
 #include "gfx/buffer.hpp"
@@ -21,7 +21,7 @@ int main() {
     gfx::SwapChain swapChain{device, 3};
     renderer::Renderer renderer = renderer::Renderer::Builder{}.build(device, swapChain);
 
-    gfx::GraphicsProgram program = gfx::GraphicsProgram::Builder{}
+    gfx::GraphicsPipeline pipeline = gfx::GraphicsPipeline::Builder{}
         .addShaderFromPath("../../../assets/shader/test.vert")
         .addShaderFromPath("../../../assets/shader/test.frag")
         .addDynamicState(vk::DynamicState::eViewport)
@@ -68,7 +68,7 @@ int main() {
 
             renderer.beginSwapChainRenderPass();
 
-            program.bind(commandBuffer);
+            pipeline.bind(commandBuffer);
 
             vk::Viewport viewPort;
             viewPort.x = viewPort.y = 0;

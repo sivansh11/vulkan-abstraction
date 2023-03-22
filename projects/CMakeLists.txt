@@ -4,5 +4,6 @@ project(projects)
 
 add_subdirectory(test)
 add_subdirectory(test-2)
+add_subdirectory(test-3)
 add_subdirectory(test_design)
 
