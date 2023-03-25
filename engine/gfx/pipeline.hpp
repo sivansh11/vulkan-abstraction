@@ -4,6 +4,7 @@
 #include "device.hpp"
 #include "renderpass.hpp"
 #include "commandbuffer.hpp"
+#include "descriptors.hpp"
 
 #include <filesystem>
 #include <set>
@@ -61,7 +62,7 @@ public:
 
         // pipeline layout create info
         Builder& addPushConstantRangeLayout(const vk::PushConstantRange& pushConstantRange);
-        Builder& addDescriptorSetLayout(const vk::DescriptorSetLayout& descriptorSetLayout);
+        Builder& addDescriptorSetLayout(const DescriptorSetLayout& descriptorSetLayout);
 
         // TODO: add setVertexInput 
         Builder& addVertexInputBindingDescription(const vk::VertexInputBindingDescription& vertexInputBindingDescription);

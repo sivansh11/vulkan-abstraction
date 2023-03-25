@@ -180,8 +180,8 @@ GraphicsPipeline::Builder& GraphicsPipeline::Builder::addPushConstantRangeLayout
     return *this;
 }
 
-GraphicsPipeline::Builder& GraphicsPipeline::Builder::addDescriptorSetLayout(const vk::DescriptorSetLayout& descriptorSetLayout) {
-    m_descriptorSetLayout.push_back(descriptorSetLayout);
+GraphicsPipeline::Builder& GraphicsPipeline::Builder::addDescriptorSetLayout(const DescriptorSetLayout& descriptorSetLayout) {
+    m_descriptorSetLayout.push_back(descriptorSetLayout.get());
     return *this;
 }
 

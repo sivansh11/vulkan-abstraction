@@ -5,34 +5,14 @@
 #include "gfx/swapchain.hpp"
 #include "gfx/pipeline.hpp"
 #include "gfx/commandbuffer.hpp"
-#include "renderer/renderer.hpp"
 #include "gfx/buffer.hpp"
+#include "gfx/descriptors.hpp"
+
+#include "renderer/renderer.hpp"
 
 #include "glm/glm.hpp"
 
 #include <memory>
-
-// struct vec2 {
-//     union {
-//         struct {
-//             float x, y;
-//         };
-//         float data[2];
-
-//     };
-// };
-
-// struct vec3 {
-//     union {
-//         struct {
-//             float x, y, z;
-//         };
-//         struct {
-//             float r, g, b;
-//         };
-//         float data[3];
-//     };
-// };
 
 int main(int argc, char **argv) {
     if (!core::Log::init()) {
@@ -132,66 +112,26 @@ int main(int argc, char **argv) {
     std::memcpy(indexBuffer.getMapped(), indices.data(), sizeof(uint32_t) * indices.size());
     indexBuffer.unmap();
 
-    vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding = vk::DescriptorSetLayoutBinding{}
-        .setBinding(0)
-        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setDescriptorCount(1)
-        .setStageFlags(vk::ShaderStageFlagBits::eVertex);
     
-    vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = vk::DescriptorSetLayoutCreateInfo{}
-        .setBindingCount(1)
-        .setPBindings(&descriptorSetLayoutBinding);
+    gfx::DescriptorSetLayout descriptorSetLayout = gfx::DescriptorSetLayout::Builder{}
+        .addBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, 1)
+        .build(device);
 
-    vk::DescriptorSetLayout descriptorSetLayout;
+    gfx::DescriptorPool descriptorPool = gfx::DescriptorPool::Builder{}
+        .addPoolSize(vk::DescriptorType::eUniformBuffer, swapChain.MAX_FRAMES_IN_FLIGHT)
+        .setMaxSets(swapChain.MAX_FRAMES_IN_FLIGHT)
+        // .setMaxSets(1000) // might be worth to default this to 1000
+        .build(device);
 
-    auto res = device->get().createDescriptorSetLayout(&descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout);
+    auto descriptors = descriptorPool.allocate(gfx::DescriptorPool::SetAllocateInfo{}
+        .addLayout(descriptorSetLayout)
+        .addLayout(descriptorSetLayout)
+        .addLayout(descriptorSetLayout));
 
-    if (res != vk::Result::eSuccess) {
-        throw std::runtime_error("Failed to create uniform buffers!");
-    }
-
-    vk::DescriptorPoolSize descriptorPoolSize = vk::DescriptorPoolSize{}
-        .setDescriptorCount(swapChain.MAX_FRAMES_IN_FLIGHT)
-        .setType(vk::DescriptorType::eUniformBuffer);
-
-    vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo = vk::DescriptorPoolCreateInfo{}
-        .setPoolSizeCount(1)
-        .setPPoolSizes(&descriptorPoolSize)
-        .setMaxSets(swapChain.MAX_FRAMES_IN_FLIGHT);
-    
-    vk::DescriptorPool descriptorPool;
-
-    if (device->get().createDescriptorPool(&descriptorPoolCreateInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
-        throw std::runtime_error("Failed to create descriptor pool!");
-    }
-
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts(swapChain.MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
-    vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo = vk::DescriptorSetAllocateInfo{}
-        .setDescriptorPool(descriptorPool)
-        .setDescriptorSetCount(swapChain.MAX_FRAMES_IN_FLIGHT)
-        .setPSetLayouts(descriptorSetLayouts.data());
-
-    std::vector<vk::DescriptorSet> descriptorSets;
-    descriptorSets.resize(swapChain.MAX_FRAMES_IN_FLIGHT);
-    if (device->get().allocateDescriptorSets(&descriptorSetAllocateInfo, descriptorSets.data()) != vk::Result::eSuccess) {
-        throw std::runtime_error("Failed to allocate descriptor sets!");
-    }
-
-    for (int i = 0; i < swapChain.MAX_FRAMES_IN_FLIGHT; i++) {
-        vk::DescriptorBufferInfo descriptorBufferInfo = vk::DescriptorBufferInfo{}
-            .setBuffer(uniformBuffers[i].get())
-            .setOffset(0)
-            .setRange(sizeof(UniformBufferObject));
-        
-        vk::WriteDescriptorSet writeDescriptorSet = vk::WriteDescriptorSet{}
-            .setDstSet(descriptorSets[i])
-            .setDstBinding(0)
-            .setDstArrayElement(0)
-            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-            .setDescriptorCount(1)
-            .setPBufferInfo(&descriptorBufferInfo);
-        
-        device->get().updateDescriptorSets(1, &writeDescriptorSet, 0, nullptr);
+    for (int i = 0; i < descriptors.size(); i++) {
+        auto& descriptor = descriptors[i];
+        descriptor.update(gfx::DescriptorSet::Update{}
+            .addBuffer(0, uniformBuffers[i].getDescriptorBufferInfo()));
     }
 
     gfx::GraphicsPipeline pipeline = gfx::GraphicsPipeline::Builder{}
@@ -252,7 +192,7 @@ int main(int argc, char **argv) {
             update();
 
             pipeline.bind(commandBuffer);
-            commandBuffer.get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.getPipelineLayout(), 0, 1, &descriptorSets[renderer.getCurrentFrameIndex()], 0, nullptr);
+            commandBuffer.get().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.getPipelineLayout(), 0, 1, &descriptors[renderer.getCurrentFrameIndex()].get(), 0, nullptr);
 
             commandBuffer.get().bindVertexBuffers(0, {vertexBuffer.get()}, {0});
             commandBuffer.get().bindIndexBuffer(indexBuffer.get(), {0}, vk::IndexType::eUint32);
@@ -264,7 +204,7 @@ int main(int argc, char **argv) {
         }
 
     }
-
+    
     device->get().waitIdle();
 
     return 0;

@@ -39,6 +39,8 @@ public:
     // void flush();
     // void invalidate();
 
+    vk::DescriptorBufferInfo getDescriptorBufferInfo(uint32_t offset = 0) const;
+
 private:
     Buffer(std::shared_ptr<Device> device, vk::Buffer buffer, vk::DeviceMemory deviceMemory, vk::DeviceSize bufferSize);
 

@@ -93,4 +93,11 @@ void Buffer::unmap() {
     m_mapped = nullptr;
 }
 
+vk::DescriptorBufferInfo Buffer::getDescriptorBufferInfo(uint32_t offset) const {
+    return vk::DescriptorBufferInfo{}
+        .setBuffer(m_buffer)
+        .setOffset(offset)
+        .setRange(m_bufferSize);
+}
+
 } // namespace gfx
